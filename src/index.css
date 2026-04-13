@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply m-0 text-base-content;
+  background:
+    radial-gradient(circle at top, rgba(59, 91, 219, 0.18), transparent 30%),
+    linear-gradient(180deg, #0b1220 0%, #111827 35%, #0f172a 100%);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+.card-section,
+.app-surface {
+  @apply border shadow-2xl border-white/10 bg-slate-900/75 shadow-black/25 backdrop-blur;
+  border-radius: 1.5rem;
+}
+
+.app-shell {
+  @apply min-h-screen text-slate-100;
+}
+
+.app-container {
+  @apply w-full px-4 py-6 mx-auto md:px-6 lg:px-8;
+  max-width: 1500px;
+}
+
+.app-grid {
+  @apply grid grid-cols-1 gap-6;
+}
+
+.page-section {
+  @apply border shadow-xl border-white/10 bg-slate-900/70 shadow-black/20 backdrop-blur;
+  border-radius: 1.5rem;
+}
+
+.page-section-body {
+  @apply p-5 md:p-6;
+}
+
+.page-title {
+  @apply text-3xl font-semibold tracking-tight text-white;
+}
+
+.page-subtitle {
+  @apply mt-2 text-sm text-slate-300;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4;
+}
+
+.form-grid-wide {
+  @apply md:col-span-2 xl:col-span-4;
+}
+
+.form-actions {
+  @apply flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-white/10;
+}
+
+.field-label {
+  @apply block mb-2 text-xs font-semibold uppercase text-slate-300;
+  letter-spacing: 0.14em;
+}
+
+.input,
+.select,
+.textarea {
+  @apply border-white/10 bg-slate-950/70 text-slate-100;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  @apply text-slate-500;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  @apply outline-none border-sky-500;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+.table thead th {
+  @apply font-semibold uppercase border-b border-white/10 bg-slate-950/40 text-slate-300;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+
+.table tbody tr {
+  @apply border-b border-white/5;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.badge-soft {
+  @apply px-3 py-1 text-xs font-medium border rounded-full border-white/10 bg-white/5 text-slate-200;
+}
+
+.kpi-card {
+  @apply p-5 border shadow-lg border-white/10 bg-slate-900/70 shadow-black/20;
+  border-radius: 1.5rem;
+}
+
+.auth-shell {
+  @apply min-h-screen px-4 py-8 md:px-6;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 22%),
+    linear-gradient(180deg, #0b1220 0%, #111827 45%, #0f172a 100%);
+}
+
+.auth-grid {
+  @apply grid items-center w-full max-w-6xl gap-8 mx-auto;
+  min-height: calc(100vh - 4rem);
+}
+
+.auth-hero {
+  @apply hidden p-8 border shadow-2xl border-white/10 bg-slate-900/55 shadow-black/30 backdrop-blur;
+  border-radius: 2rem;
+}
+
+.auth-card {
+  @apply p-6 border shadow-2xl border-white/10 bg-slate-900/80 shadow-black/30 backdrop-blur md:p-8;
+  border-radius: 2rem;
+}
+
+.auth-brand {
+  @apply inline-flex items-center gap-3 px-4 py-2 text-sm font-medium text-white border border-white/10 bg-slate-900;
+  border-radius: 9999px;
+}
+
+.auth-kpi {
+  @apply p-4 border rounded-2xl border-white/10 bg-white/5;
+}
+
+.sidebar-link {
+  @apply flex items-center px-4 py-3 text-sm font-medium transition rounded-2xl text-slate-300 hover:bg-white/5 hover:text-white;
+}
+
+.sidebar-link.active {
+  @apply text-white shadow-lg bg-sky-600;
+}
+
+@media (min-width: 1280px) {
+  .app-grid {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-grid {
+    grid-template-columns: 1.1fr 520px;
+  }
+
+  .auth-hero {
+    display: flex;
+    min-height: 620px;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 1024px) {
+  .auth-grid {
+    max-width: 36rem;
+  }
+}

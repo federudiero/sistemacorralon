@@ -1,0 +1,17 @@
+{
+  "adminFull": [
+    "adminfull@demo.com"
+  ],
+  "admins": [
+    "admin@demo.com"
+  ],
+  "operadores": [
+    "operador@demo.com"
+  ],
+  "vendedores": [
+    "vendedor@demo.com"
+  ],
+  "soloLectura": [
+    "lectura@demo.com"
+  ]
+}

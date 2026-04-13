@@ -1,0 +1,9 @@
+Shape mínimo recomendado de CuentaContext para el binding:
+
+{
+  cuentaId: string,
+  cuentaActual?: string,
+  selectedCuenta?: string,
+}
+
+El binding debe resolver un único cuentaId estable.

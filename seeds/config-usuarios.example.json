@@ -1,0 +1,17 @@
+{
+  "admins": [
+    "admin@tuapp.com"
+  ],
+  "adminFull": [
+    "owner@tuapp.com"
+  ],
+  "operadores": [
+    "operador@tuapp.com"
+  ],
+  "vendedores": [
+    "vendedor@tuapp.com"
+  ],
+  "soloLectura": [
+    "auditoria@tuapp.com"
+  ]
+}

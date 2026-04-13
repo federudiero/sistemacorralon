@@ -1,0 +1,69 @@
+# Dependencias
+node_modules/
+
+# Build / distribución
+dist/
+build/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache
+.vite/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Cobertura / testing
+coverage/
+
+# Firebase local / emulators
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Archivos de credenciales sensibles
+serviceAccountKey.json
+*service-account*.json
+*.pem
+*.key
+
+# Archivos comprimidos locales
+*.zip
+*.rar
+*.7z
+
+# Runtime local
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript build info
+*.tsbuildinfo

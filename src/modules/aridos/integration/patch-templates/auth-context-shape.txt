@@ -1,0 +1,16 @@
+Shape mínimo recomendado de AuthContext para el binding:
+
+{
+  user: { email?: string } | null,
+  loading: boolean,
+  isAuthenticated?: boolean,
+  role?: string,
+  roles?: string[],
+}
+
+El binding puede derivar:
+- userEmail
+- isAuthenticated
+- role base
+
+Si tu app no guarda role en AuthContext, puede salir de Firestore mediante el módulo de seguridad.

@@ -1,0 +1,7 @@
+Checklist de merge sobre layout/navbar:
+
+[ ] agregar bloque "Áridos" al menú solo si hay acceso a alguna sección
+[ ] evitar hardcodear permisos en el layout
+[ ] usar createAridosNavItems() para que menú y guards compartan criterio
+[ ] no duplicar lógica de role checks en cada botón del navbar
+[ ] dejar el módulo detrás del mismo shell/layout principal

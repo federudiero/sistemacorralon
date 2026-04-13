@@ -1,0 +1,14 @@
+{
+  "dashboard": { "read": true, "write": false, "adjust": false, "annul": false, "admin": false },
+  "productos": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "bateas": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "proveedores": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "clientes": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "ingresos": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "ventas": { "read": true, "write": true, "adjust": false, "annul": true, "admin": false },
+  "movimientos": { "read": true, "write": false, "adjust": false, "annul": false, "admin": false },
+  "ajustes": { "read": true, "write": false, "adjust": true, "annul": false, "admin": false },
+  "remitos": { "read": true, "write": true, "adjust": false, "annul": false, "admin": false },
+  "reportes": { "read": true, "write": false, "adjust": false, "annul": false, "admin": false },
+  "config": { "read": true, "write": false, "adjust": false, "annul": false, "admin": false }
+}
