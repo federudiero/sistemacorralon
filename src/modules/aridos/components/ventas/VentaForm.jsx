@@ -7,15 +7,15 @@ import {
   CLIENTE_GENERICO_NOMBRE,
   METODOS_PAGO,
   TIPOS_ENTREGA,
-  VEHICULOS_ENVIO,
 } from '../../utils/constants';
 import {
   describeProductoUnidad,
   formatCurrency,
-  formatQuantity,
+  toInputDate,
 } from '../../utils/formatters';
 
-const INITIAL_FORM = {
+const buildInitialForm = (fecha = toInputDate(new Date())) => ({
+  fecha,
   clienteId: '',
   productoId: '',
   cantidad: '',
@@ -26,12 +26,7 @@ const INITIAL_FORM = {
   envioMonto: '',
   detalleEntrega: '',
   observaciones: '',
-};
-
-function buildTodayStr() {
-  const fecha = new Date();
-  return `${fecha.getFullYear()}-${`${fecha.getMonth() + 1}`.padStart(2, '0')}-${`${fecha.getDate()}`.padStart(2, '0')}`;
-}
+});
 
 export default function VentaForm({
   cuentaId,
@@ -41,13 +36,11 @@ export default function VentaForm({
   onSaved,
   disabled = false,
 }) {
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState(() => buildInitialForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [cajaCerrada, setCajaCerrada] = useState(false);
   const [checkingClose, setCheckingClose] = useState(true);
-
-  const todayStr = useMemo(() => buildTodayStr(), []);
 
   const clienteGenerico = useMemo(
     () =>
@@ -56,6 +49,8 @@ export default function VentaForm({
       null,
     [clientes],
   );
+
+  const fechaOperativa = form.fecha || toInputDate(new Date());
 
   useEffect(() => {
     if (!form.clienteId && clienteGenerico?.id) {
@@ -67,10 +62,10 @@ export default function VentaForm({
     let active = true;
 
     async function loadCloseState() {
-      if (!cuentaId) return;
+      if (!cuentaId || !fechaOperativa) return;
       setCheckingClose(true);
       try {
-        const closed = await isCajaCerrada(cuentaId, todayStr);
+        const closed = await isCajaCerrada(cuentaId, fechaOperativa);
         if (!active) return;
         setCajaCerrada(closed);
       } catch {
@@ -85,7 +80,7 @@ export default function VentaForm({
     return () => {
       active = false;
     };
-  }, [cuentaId, todayStr]);
+  }, [cuentaId, fechaOperativa]);
 
   const cliente = useMemo(
     () => clientes.find((item) => item.id === form.clienteId),
@@ -102,6 +97,17 @@ export default function VentaForm({
   const envioMonto = form.tipoEntrega === 'envio' ? Number(form.envioMonto || 0) : 0;
   const totalFinal = subtotal + envioMonto;
   const blocked = saving || disabled || cajaCerrada || checkingClose;
+  const isEnvio = form.tipoEntrega === 'envio';
+
+  function updateEntrega(tipoEntrega) {
+    setForm((prev) => ({
+      ...prev,
+      tipoEntrega,
+      vehiculoEntrega: tipoEntrega === 'retiro' ? 'retiro_cliente' : 'envio',
+      envioMonto: tipoEntrega === 'retiro' ? '' : prev.envioMonto,
+      detalleEntrega: tipoEntrega === 'retiro' ? '' : prev.detalleEntrega,
+    }));
+  }
 
   async function handleSubmit() {
     if (blocked) return;
@@ -114,6 +120,7 @@ export default function VentaForm({
         cuentaId,
         {
           ...form,
+          fecha: fechaOperativa,
           clienteNombre: cliente?.nombre || '',
           telefono: cliente?.telefono || '',
           direccion: cliente?.direccion || '',
@@ -124,8 +131,8 @@ export default function VentaForm({
         currentUserEmail,
       );
 
-      setForm({ ...INITIAL_FORM, clienteId: clienteGenerico?.id || '' });
-      setCajaCerrada(await isCajaCerrada(cuentaId, todayStr));
+      setForm({ ...buildInitialForm(fechaOperativa), clienteId: clienteGenerico?.id || '' });
+      setCajaCerrada(await isCajaCerrada(cuentaId, fechaOperativa));
       onSaved?.();
     } catch (err) {
       setError(err?.message || 'No se pudo guardar la venta.');
@@ -136,52 +143,37 @@ export default function VentaForm({
 
   return (
     <div className="mb-4 page-section">
-      <div className="space-y-5 page-section-body pb-28 md:pb-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Registrar venta</h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Pensado para mostrador y uso rápido desde teléfono.
-            </p>
-          </div>
-
-          <div className="p-3 border rounded-2xl border-white/10 bg-white/5">
-            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">
-              Cliente actual
-            </div>
-            <div className="mt-1 text-sm font-medium text-white">
-              {cliente?.nombre || 'Sin cliente'}
-            </div>
-          </div>
+      <div className="pb-4 space-y-5 page-section-body md:pb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Registrar venta</h2>
+          <p className="mt-1 text-sm text-slate-300">
+            Podés registrar la venta para hoy o dejarla programada en otra fecha operativa.
+          </p>
         </div>
 
         {cajaCerrada ? (
           <div className="alert alert-warning">
-            El día {todayStr} ya está cerrado. No se pueden registrar ventas nuevas.
+            El día {fechaOperativa} ya está cerrado. No se pueden registrar ventas nuevas para esa fecha.
           </div>
         ) : null}
 
-        <div className="mobile-summary-strip md:hidden">
-          <div>
-            <div className="mobile-summary-label">Producto</div>
-            <div className="mobile-summary-value">{producto?.nombre || 'Seleccionar'}</div>
-          </div>
-          <div>
-            <div className="mobile-summary-label">Cantidad</div>
-            <div className="mobile-summary-value">
-              {producto
-                ? formatQuantity(form.cantidad || 0, producto.unidadStock || producto.unidad, producto.pesoBolsaKg)
-                : '0'}
-            </div>
-          </div>
-        </div>
-
         <div className="form-grid">
+          <label className="w-full form-control">
+            <span className="field-label">Fecha</span>
+            <input
+              type="date"
+              className="h-12 input input-bordered"
+              value={fechaOperativa}
+              onChange={(e) => setForm((prev) => ({ ...prev, fecha: e.target.value }))}
+              disabled={saving || disabled}
+            />
+          </label>
+
           <EntitySearchSelect
             label="Cliente"
             items={clientes}
             value={form.clienteId}
-            onChange={(value) => setForm((p) => ({ ...p, clienteId: value }))}
+            onChange={(value) => setForm((prev) => ({ ...prev, clienteId: value }))}
             disabled={blocked}
           />
 
@@ -191,8 +183,8 @@ export default function VentaForm({
             value={form.productoId}
             onChange={(value) => {
               const prod = productos.find((item) => item.id === value);
-              setForm((p) => ({
-                ...p,
+              setForm((prev) => ({
+                ...prev,
                 productoId: value,
                 precioUnitario: prod?.precioVenta || '',
               }));
@@ -200,11 +192,26 @@ export default function VentaForm({
             disabled={blocked}
           />
 
+          {cliente?.telefono || cliente?.direccion ? (
+            <div className="px-4 py-3 border form-grid-wide rounded-2xl border-base-300/70 bg-base-200/50">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <div className="field-label">Teléfono</div>
+                  <div className="mt-1 text-sm text-base-content/80">{cliente?.telefono || '-'}</div>
+                </div>
+                <div>
+                  <div className="field-label">Dirección</div>
+                  <div className="mt-1 text-sm text-base-content/80">{cliente?.direccion || '-'}</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div>
             <span className="field-label">{quantityLabel}</span>
             <NumericInputM3
               value={form.cantidad}
-              onChange={(value) => setForm((p) => ({ ...p, cantidad: value }))}
+              onChange={(value) => setForm((prev) => ({ ...prev, cantidad: value }))}
               disabled={blocked}
             />
           </div>
@@ -215,7 +222,7 @@ export default function VentaForm({
               type="number"
               className="h-12 input input-bordered"
               value={form.precioUnitario}
-              onChange={(e) => setForm((p) => ({ ...p, precioUnitario: e.target.value }))}
+              onChange={(e) => setForm((prev) => ({ ...prev, precioUnitario: e.target.value }))}
               disabled={blocked}
             />
           </label>
@@ -225,7 +232,7 @@ export default function VentaForm({
             <select
               className="h-12 select select-bordered"
               value={form.metodoPago}
-              onChange={(e) => setForm((p) => ({ ...p, metodoPago: e.target.value }))}
+              onChange={(e) => setForm((prev) => ({ ...prev, metodoPago: e.target.value }))}
               disabled={blocked}
             >
               {METODOS_PAGO.map((item) => (
@@ -237,18 +244,11 @@ export default function VentaForm({
           </label>
 
           <label className="w-full form-control">
-            <span className="field-label">Modalidad</span>
+            <span className="field-label">Entrega</span>
             <select
               className="h-12 select select-bordered"
               value={form.tipoEntrega}
-              onChange={(e) =>
-                setForm((p) => ({
-                  ...p,
-                  tipoEntrega: e.target.value,
-                  vehiculoEntrega:
-                    e.target.value === 'retiro' ? 'retiro_cliente' : p.vehiculoEntrega,
-                }))
-              }
+              onChange={(e) => updateEntrega(e.target.value)}
               disabled={blocked}
             >
               {TIPOS_ENTREGA.map((item) => (
@@ -259,81 +259,41 @@ export default function VentaForm({
             </select>
           </label>
 
-          <label className="w-full form-control">
-            <span className="field-label">Vehículo / logística</span>
-            <select
-              className="h-12 select select-bordered"
-              value={form.vehiculoEntrega}
-              onChange={(e) => setForm((p) => ({ ...p, vehiculoEntrega: e.target.value }))}
-              disabled={blocked}
-            >
-              {VEHICULOS_ENVIO.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {isEnvio ? (
+            <>
+              <label className="w-full form-control">
+                <span className="field-label">Flete</span>
+                <input
+                  type="number"
+                  className="h-12 input input-bordered"
+                  value={form.envioMonto}
+                  onChange={(e) => setForm((prev) => ({ ...prev, envioMonto: e.target.value }))}
+                  disabled={blocked}
+                  placeholder="0"
+                />
+              </label>
 
-          <label className="w-full form-control">
-            <span className="field-label">Envío cobrado</span>
-            <input
-              type="number"
-              className="h-12 input input-bordered"
-              value={form.envioMonto}
-              onChange={(e) => setForm((p) => ({ ...p, envioMonto: e.target.value }))}
-              disabled={blocked || form.tipoEntrega !== 'envio'}
-              placeholder="0"
-            />
-          </label>
-
-          <label className="form-control form-grid-wide">
-            <span className="field-label">Detalle de entrega / dirección</span>
-            <input
-              className="h-12 input input-bordered"
-              value={form.detalleEntrega}
-              onChange={(e) => setForm((p) => ({ ...p, detalleEntrega: e.target.value }))}
-              disabled={blocked}
-              placeholder="Dirección, barrio, referencias o datos del flete"
-            />
-          </label>
-
-          <div className="p-4 border rounded-2xl border-white/10 bg-white/5 xl:col-span-2">
-            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">
-              Resumen económico
-            </div>
-
-            <div className="grid gap-3 mt-3 md:grid-cols-3">
-              <div>
-                <div className="text-sm text-slate-300">Subtotal</div>
-                <div className="mt-1 text-xl font-semibold text-white">
-                  {formatCurrency(subtotal)}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-sm text-slate-300">Envío</div>
-                <div className="mt-1 text-xl font-semibold text-white">
-                  {formatCurrency(envioMonto)}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-sm text-slate-300">Total final</div>
-                <div className="mt-1 text-xl font-semibold text-white">
-                  {formatCurrency(totalFinal)}
-                </div>
-              </div>
-            </div>
-          </div>
+              <label className="form-control form-grid-wide">
+                <span className="field-label">Dirección o referencia</span>
+                <input
+                  className="h-12 input input-bordered"
+                  value={form.detalleEntrega}
+                  onChange={(e) => setForm((prev) => ({ ...prev, detalleEntrega: e.target.value }))}
+                  disabled={blocked}
+                  placeholder="Dirección, barrio o referencia útil para la entrega"
+                />
+              </label>
+            </>
+          ) : null}
 
           <label className="form-control form-grid-wide">
-            <span className="field-label">Observaciones</span>
+            <span className="field-label">Nota interna</span>
             <textarea
               className="textarea textarea-bordered min-h-24"
               value={form.observaciones}
-              onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))}
+              onChange={(e) => setForm((prev) => ({ ...prev, observaciones: e.target.value }))}
               disabled={blocked}
+              placeholder="Dato opcional para dejar asentado en la venta"
             />
           </label>
         </div>
@@ -344,30 +304,45 @@ export default function VentaForm({
 
         {error ? <div className="alert alert-error">{error}</div> : null}
 
-        <div className="hidden form-actions md:flex">
-          <button className="px-6 btn btn-primary h-11" onClick={handleSubmit} disabled={blocked}>
-            {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
-          </button>
+        <div className="hidden items-center justify-between gap-4 md:flex">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Total a cobrar</div>
+            <div className="mt-1 text-2xl font-semibold text-white">{formatCurrency(totalFinal)}</div>
+            <div className="mt-1 text-sm text-slate-400">
+              Fecha {fechaOperativa} • Subtotal {formatCurrency(subtotal)} {isEnvio ? `• Flete ${formatCurrency(envioMonto)}` : ''}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button className="px-6 btn btn-primary h-11" onClick={handleSubmit} disabled={blocked}>
+              {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
+            </button>
+          </div>
         </div>
 
-        <div className="mobile-sticky-actionbar md:hidden">
-          <div className="mobile-sticky-actionbar-inner">
-            <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                Total a cobrar
+        <div className="md:hidden">
+          <div className="rounded-2xl border border-base-300/70 bg-base-100 px-4 py-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                  Total a cobrar
+                </div>
+                <div className="mt-1 text-xl font-semibold text-white">
+                  {formatCurrency(totalFinal)}
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  Fecha {fechaOperativa} • {isEnvio ? `Flete ${formatCurrency(envioMonto)}` : 'Retiro sin flete'}
+                </div>
               </div>
-              <div className="text-lg font-semibold text-white truncate">
-                {formatCurrency(totalFinal)}
-              </div>
-            </div>
 
-            <button
-              className="btn btn-primary h-12 min-w-[148px] px-5"
-              onClick={handleSubmit}
-              disabled={blocked}
-            >
-              {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
-            </button>
+              <button
+                className="btn btn-primary h-12 min-w-[148px] px-5"
+                onClick={handleSubmit}
+                disabled={blocked}
+              >
+                {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

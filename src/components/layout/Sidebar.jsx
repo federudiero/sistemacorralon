@@ -60,46 +60,6 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
               </button>
             </div>
 
-            <div className="mt-5 xl:hidden">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Accesos rápidos
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <NavLink
-                  to="/aridos/ventas"
-                  onClick={onClose}
-                  className="btn btn-primary btn-sm rounded-2xl"
-                >
-                  Venta
-                </NavLink>
-
-                <NavLink
-                  to="/aridos/ingresos"
-                  onClick={onClose}
-                  className="btn btn-outline btn-sm rounded-2xl"
-                >
-                  Reposición
-                </NavLink>
-
-                <NavLink
-                  to="/aridos/cierre-caja"
-                  onClick={onClose}
-                  className="btn btn-outline btn-sm rounded-2xl"
-                >
-                  Cierre
-                </NavLink>
-
-                <NavLink
-                  to="/aridos"
-                  onClick={onClose}
-                  className="btn btn-outline btn-sm rounded-2xl"
-                >
-                  Dashboard
-                </NavLink>
-              </div>
-            </div>
-
             <nav className="pr-1 mt-5 space-y-1 overflow-y-auto xl:pr-0">
               {navItems.map((item) => (
                 <NavLink
@@ -108,12 +68,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                   onClick={onClose}
                   className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                 >
-                  <div className="flex items-center justify-between flex-1 min-w-0 gap-3">
-                    <span className="truncate">{item.label}</span>
-                    {item.isPrimary ? (
-                      <span className="hidden badge-soft sm:inline-flex">rápido</span>
-                    ) : null}
-                  </div>
+                  <span className="truncate">{item.label}</span>
                 </NavLink>
               ))}
 

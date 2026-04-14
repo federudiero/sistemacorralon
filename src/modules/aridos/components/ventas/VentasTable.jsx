@@ -1,4 +1,4 @@
-import { formatCurrency, formatDateTime, formatQuantity } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatEntregaDisplay, formatQuantity } from '../../utils/formatters';
 import EstadoBadge from '../shared/EstadoBadge';
 
 function VentaCard({ item, onView, onAnular, onGenerarRemito, canAnnul, canGenerateRemito }) {
@@ -24,9 +24,9 @@ function VentaCard({ item, onView, onAnular, onGenerarRemito, canAnnul, canGener
           </span>
         </div>
         <div>
-          <span className="mobile-data-label">Modalidad</span>
+          <span className="mobile-data-label">Entrega</span>
           <span className="mobile-data-value">
-            {item.tipoEntrega === 'retiro' ? 'Retiro' : item.vehiculoEntrega || 'Envío'}
+            {formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}
           </span>
         </div>
         <div>
@@ -108,7 +108,7 @@ export default function VentasTable({
                 <th>Cliente</th>
                 <th>Producto</th>
                 <th>Cantidad</th>
-                <th>Modalidad</th>
+                <th>Entrega</th>
                 <th>Envío</th>
                 <th>Total</th>
                 <th>Estado</th>
@@ -122,7 +122,7 @@ export default function VentasTable({
                   <td>{item.clienteNombre}</td>
                   <td>{item.productoNombre}</td>
                   <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
-                  <td>{item.tipoEntrega === 'retiro' ? 'Retiro' : item.vehiculoEntrega || 'Envío'}</td>
+                  <td>{formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</td>
                   <td>{formatCurrency(item.envioMonto || 0)}</td>
                   <td>{formatCurrency(item.total)}</td>
                   <td>

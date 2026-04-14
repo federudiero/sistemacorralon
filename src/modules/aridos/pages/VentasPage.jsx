@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
 import VentaForm from '../components/ventas/VentaForm';
@@ -35,7 +36,11 @@ export default function VentasPage({ cuentaId, currentUserEmail, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Ventas" subtitle="Ventas para retiro o envío. El stock se descuenta directo del producto." />
+      <PageHeader
+        title="Ventas"
+        subtitle="Mostrador y entrega. También podés programar ventas para otra fecha operativa."
+        actions={<Link to="/aridos/agenda" className="btn h-12">Ver agenda</Link>}
+      />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para registrar ventas nuevas." /> : null}
       <VentaForm cuentaId={cuentaId} currentUserEmail={currentUserEmail} productos={productos} clientes={clientes} disabled={!canWrite} />
       {error ? <div className="alert alert-error">{error}</div> : null}

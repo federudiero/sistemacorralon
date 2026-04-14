@@ -4,6 +4,7 @@ import AppLayout from '../components/layout/AppLayout';
 import AridosPageGuard from '../components/common/AridosPageGuard';
 import HomeRedirect from '../pages/HomeRedirect';
 import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
 import SetupPage from '../pages/SetupPage';
 import HelpPage from '../pages/HelpPage';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -20,6 +21,7 @@ import AjustesStockPage from '../modules/aridos/pages/AjustesStockPage';
 import RemitosPage from '../modules/aridos/pages/RemitosPage';
 import ReportesPage from '../modules/aridos/pages/ReportesPage';
 import CierreCajaPage from '../modules/aridos/pages/CierreCajaPage';
+import AgendaVentasPage from '../modules/aridos/pages/AgendaVentasPage';
 import { ARIDOS_SECTIONS } from '../modules/aridos/utils/permissions';
 
 function guard(PageComponent, section) {
@@ -29,6 +31,7 @@ function guard(PageComponent, section) {
 export const router = createBrowserRouter([
   { path: '/', element: <HomeRedirect /> },
   { path: '/login', element: <LoginPage /> },
+  { path: '/registro', element: <RegisterPage /> },
   {
     path: '/',
     element: (
@@ -40,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'setup', element: <SetupPage /> },
       { path: 'ayuda', element: <HelpPage /> },
       { path: 'aridos', element: guard(AridosDashboardPage, ARIDOS_SECTIONS.DASHBOARD) },
+      { path: 'aridos/agenda', element: guard(AgendaVentasPage, ARIDOS_SECTIONS.DASHBOARD) },
       { path: 'aridos/productos', element: guard(ProductosPage, ARIDOS_SECTIONS.PRODUCTOS) },
       { path: 'aridos/bateas', element: guard(BateasPage, ARIDOS_SECTIONS.BATEAS) },
       { path: 'aridos/proveedores', element: guard(ProveedoresPage, ARIDOS_SECTIONS.PROVEEDORES) },

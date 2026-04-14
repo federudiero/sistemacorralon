@@ -18,7 +18,10 @@ export default function IngresosCamionPage({ cuentaId, currentUserEmail, securit
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Reposición de stock" subtitle="Ingresos por batea, big bag o camión chasis. El stock suma directo al producto." />
+      <PageHeader
+        title="Reposición de stock"
+        subtitle="Solo proveedor, producto, cantidad, remito y costo unitario. El stock suma directo al producto y actualiza el costo actual."
+      />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para registrar reposiciones." /> : null}
       <IngresoCamionForm cuentaId={cuentaId} currentUserEmail={currentUserEmail} productos={productos} proveedores={proveedores} disabled={!canWrite} />
       {error ? <div className="alert alert-error">{error}</div> : null}

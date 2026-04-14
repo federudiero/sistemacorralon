@@ -2,6 +2,7 @@ import { collection, doc, runTransaction, serverTimestamp } from 'firebase/fires
 import { db } from '../../../firebase/firebase';
 import { requireNonNegativeNumber, requirePositiveNumber, requireString } from '../utils/validators';
 import { MOVIMIENTO_TIPOS } from '../utils/constants';
+import { buildDateStr, parseInputDate } from '../utils/formatters';
 import { subscribeCollection, docRef } from './base';
 
 function normalizePayload(payload = {}) {
@@ -10,8 +11,8 @@ function normalizePayload(payload = {}) {
   requirePositiveNumber(payload.cantidad, 'cantidad');
   requireNonNegativeNumber(payload.costoUnitario ?? 0, 'costo unitario');
 
-  const fecha = payload.fecha ? new Date(payload.fecha) : new Date();
-  const fechaStr = `${fecha.getFullYear()}-${`${fecha.getMonth() + 1}`.padStart(2, '0')}-${`${fecha.getDate()}`.padStart(2, '0')}`;
+  const fecha = payload.fecha ? parseInputDate(payload.fecha, { baseTime: new Date() }) : new Date();
+  const fechaStr = buildDateStr(fecha);
 
   return {
     fecha,

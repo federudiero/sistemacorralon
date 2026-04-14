@@ -13,7 +13,7 @@ export default function MovimientosStockPage({ cuentaId }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Movimientos de stock" subtitle="Auditoría detallada de ingresos, ventas, ajustes, devoluciones y cierres." />
+      <PageHeader title="Movimientos de stock" subtitle="Auditoría de ingresos, ventas, ajustes, anulaciones y cierres." />
       <MovimientoFilters filters={filters} setFilters={setFilters} productos={productos} />
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : <MovimientosTable items={items} />}

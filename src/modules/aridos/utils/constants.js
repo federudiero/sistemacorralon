@@ -1,30 +1,33 @@
 export const UNIDADES_PRODUCTO = [
   { value: 'm3', label: 'Metros cúbicos (m³)' },
+  { value: 'm2', label: 'Metros cuadrados (m²)' },
+  { value: 'metro', label: 'Metros (m)' },
   { value: 'unidad', label: 'Unidad' },
   { value: 'bolsa', label: 'Bolsa' },
   { value: 'kg', label: 'Kilogramo (kg)' },
   { value: 'tonelada', label: 'Tonelada (tn)' },
+  { value: 'litro', label: 'Litro (l)' },
   { value: 'pallet', label: 'Pallet' },
 ];
 
 export const PRESENTACIONES_REPOSICION = [
-  { value: 'batea_20_24', label: 'Batea 20 a 24 m³' },
+  { value: 'batea_20_24', label: 'Batea 20/24 m³' },
   { value: 'bigbag_1m3', label: 'Big bag 1 m³' },
-  { value: 'chasis_6m3', label: 'Camión chasis 6 m³' },
+  { value: 'chasis_6m3', label: 'Chasis 6 m³' },
   { value: 'camion_12m3', label: 'Camión 12 m³' },
   { value: 'camion_15m3', label: 'Camión 15 m³' },
   { value: 'pallet_bolsas', label: 'Pallet de bolsas' },
-  { value: 'retiro_proveedor', label: 'Retiro en proveedor' },
-  { value: 'otro', label: 'Otra reposición' },
+  { value: 'retiro_proveedor', label: 'Retiro proveedor' },
+  { value: 'otro', label: 'Otra' },
 ];
 
 export const VEHICULOS_ENVIO = [
-  { value: 'retiro_cliente', label: 'Retira el cliente' },
+  { value: 'retiro_cliente', label: 'Retira cliente' },
   { value: 'camion_batea', label: 'Camión batea' },
-  { value: 'camion_chasis_6m3', label: 'Camión chasis 6 m³' },
-  { value: 'camion_chasis_12m3', label: 'Camión chasis 12 m³' },
-  { value: 'flete_tercero', label: 'Flete de tercero' },
-  { value: 'otro', label: 'Otro vehículo' },
+  { value: 'camion_chasis_6m3', label: 'Camión 6 m³' },
+  { value: 'camion_chasis_12m3', label: 'Camión 12 m³' },
+  { value: 'flete_tercero', label: 'Flete tercero' },
+  { value: 'otro', label: 'Otro' },
 ];
 
 export const MOVIMIENTO_TIPOS = {
@@ -43,7 +46,7 @@ export const MOVIMIENTO_LABELS = {
   [MOVIMIENTO_TIPOS.AJUSTE_POSITIVO]: 'Ajuste positivo',
   [MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO]: 'Ajuste negativo',
   [MOVIMIENTO_TIPOS.MERMA]: 'Merma',
-  [MOVIMIENTO_TIPOS.DEVOLUCION]: 'Devolución',
+  [MOVIMIENTO_TIPOS.DEVOLUCION]: 'Devolución / reverso',
   [MOVIMIENTO_TIPOS.CIERRE_CAJA]: 'Cierre de caja',
 };
 
@@ -77,8 +80,8 @@ export const METODOS_PAGO = [
 ];
 
 export const TIPOS_ENTREGA = [
-  { value: 'retiro', label: 'Retiro en corralón' },
-  { value: 'envio', label: 'Envío a domicilio' },
+  { value: 'retiro', label: 'Retira cliente' },
+  { value: 'envio', label: 'Se lo llevamos' },
 ];
 
 export const AJUSTE_TIPOS = [

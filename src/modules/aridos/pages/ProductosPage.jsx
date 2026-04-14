@@ -27,7 +27,7 @@ export default function ProductosPage({ cuentaId, currentUserEmail, security }) 
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Productos" subtitle="Catálogo del corralón: áridos por m³, unidades y bolsas de 1 a 25 kg" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo producto</button> : null} />
+      <PageHeader title="Productos" subtitle="Catálogo del corralón con unidad de medida, precio de venta y costo actual por producto." actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo producto</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso de escritura sobre productos. Podés consultar el catálogo pero no modificarlo." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : <ProductosTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} />}

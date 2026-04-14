@@ -5,6 +5,7 @@ export const ARIDOS_NAV_ITEMS = [
   { label: 'Reposición', to: '/aridos/ingresos', section: ARIDOS_SECTIONS.INGRESOS, isPrimary: true },
   { label: 'Cierre diario', to: '/aridos/cierre-caja', section: ARIDOS_SECTIONS.CIERRE_CAJA, isPrimary: true },
   { label: 'Dashboard', to: '/aridos', section: ARIDOS_SECTIONS.DASHBOARD },
+  { label: 'Agenda', to: '/aridos/agenda', section: ARIDOS_SECTIONS.DASHBOARD },
   { label: 'Clientes', to: '/aridos/clientes', section: ARIDOS_SECTIONS.CLIENTES },
   { label: 'Productos', to: '/aridos/productos', section: ARIDOS_SECTIONS.PRODUCTOS },
   { label: 'Movimientos', to: '/aridos/movimientos', section: ARIDOS_SECTIONS.MOVIMIENTOS },

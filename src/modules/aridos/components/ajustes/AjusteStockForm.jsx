@@ -4,21 +4,24 @@ import { createAjusteStock } from '../../services/ajustesStock.service';
 import { isCajaCerrada } from '../../services/cierreCaja.service';
 import EntitySearchSelect from '../shared/EntitySearchSelect';
 import NumericInputM3 from '../shared/NumericInputM3';
-import { describeProductoUnidad } from '../../utils/formatters';
+import { describeProductoUnidad, toInputDate } from '../../utils/formatters';
 
-function buildTodayStr() {
-  const fecha = new Date();
-  return `${fecha.getFullYear()}-${`${fecha.getMonth() + 1}`.padStart(2, '0')}-${`${fecha.getDate()}`.padStart(2, '0')}`;
-}
+const buildInitialForm = (fecha = toInputDate(new Date())) => ({
+  fecha,
+  productoId: '',
+  tipo: AJUSTE_TIPOS[0].value,
+  cantidad: '',
+  motivo: '',
+});
 
 export default function AjusteStockForm({ cuentaId, currentUserEmail, productos = [], onSaved, disabled = false }) {
-  const [form, setForm] = useState({ productoId: '', tipo: AJUSTE_TIPOS[0].value, cantidad: '', motivo: '' });
+  const [form, setForm] = useState(() => buildInitialForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [cajaCerrada, setCajaCerrada] = useState(false);
   const [checkingClose, setCheckingClose] = useState(true);
 
-  const todayStr = useMemo(() => buildTodayStr(), []);
+  const fechaOperativa = form.fecha || toInputDate(new Date());
   const producto = useMemo(() => productos.find((item) => item.id === form.productoId), [productos, form.productoId]);
   const quantityLabel = producto ? `Cantidad (${describeProductoUnidad(producto)})` : 'Cantidad';
 
@@ -26,10 +29,10 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
     let active = true;
 
     async function loadCloseState() {
-      if (!cuentaId) return;
+      if (!cuentaId || !fechaOperativa) return;
       setCheckingClose(true);
       try {
-        const closed = await isCajaCerrada(cuentaId, todayStr);
+        const closed = await isCajaCerrada(cuentaId, fechaOperativa);
         if (!active) return;
         setCajaCerrada(closed);
       } catch {
@@ -44,21 +47,22 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
     return () => {
       active = false;
     };
-  }, [cuentaId, todayStr]);
+  }, [cuentaId, fechaOperativa]);
 
   async function handleSubmit() {
-    if (disabled || cajaCerrada) return;
+    if (disabled || blocked) return;
     setSaving(true);
     setError('');
     try {
       await createAjusteStock(cuentaId, {
         ...form,
+        fecha: fechaOperativa,
         productoNombre: producto?.nombre || '',
         unidadStock: producto?.unidadStock || producto?.unidad || 'm3',
         pesoBolsaKg: producto?.pesoBolsaKg || null,
       }, currentUserEmail);
-      setForm({ productoId: '', tipo: AJUSTE_TIPOS[0].value, cantidad: '', motivo: '' });
-      setCajaCerrada(await isCajaCerrada(cuentaId, todayStr));
+      setForm(buildInitialForm(fechaOperativa));
+      setCajaCerrada(await isCajaCerrada(cuentaId, fechaOperativa));
       onSaved?.();
     } catch (err) {
       setError(err?.message || 'No se pudo guardar el ajuste.');
@@ -74,16 +78,27 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
       <div className="page-section-body space-y-5">
         <div>
           <h2 className="text-lg font-semibold text-white">Registrar ajuste</h2>
-          <p className="mt-1 text-sm text-slate-300">Aplicá ajustes positivos, negativos o mermas sobre el stock del producto dejando trazabilidad del motivo.</p>
+          <p className="mt-1 text-sm text-slate-300">Podés dejar el ajuste en la fecha operativa correcta y mantener la trazabilidad del motivo.</p>
         </div>
 
         {cajaCerrada ? (
           <div className="alert alert-warning">
-            El día {todayStr} ya está cerrado. No se pueden registrar ajustes nuevos hasta abrir un nuevo día operativo.
+            El día {fechaOperativa} ya está cerrado. No se pueden registrar ajustes nuevos para esa fecha.
           </div>
         ) : null}
 
         <div className="form-grid">
+          <label className="form-control w-full">
+            <span className="field-label">Fecha</span>
+            <input
+              type="date"
+              className="input input-bordered h-12"
+              value={fechaOperativa}
+              onChange={(e) => setForm((p) => ({ ...p, fecha: e.target.value }))}
+              disabled={saving || disabled}
+            />
+          </label>
+
           <EntitySearchSelect label="Producto" items={productos} value={form.productoId} onChange={(value) => setForm((p) => ({ ...p, productoId: value }))} disabled={blocked} />
 
           <label className="form-control w-full">

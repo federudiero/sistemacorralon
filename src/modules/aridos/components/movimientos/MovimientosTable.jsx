@@ -3,6 +3,7 @@ import {
   formatDateTime,
   formatMovimientoTipo,
   formatQuantity,
+  formatReferenciaMovimiento,
 } from '../../utils/formatters';
 
 function MovimientoCard({ item }) {
@@ -10,11 +11,11 @@ function MovimientoCard({ item }) {
     <div className="mobile-data-card">
       <div className="mobile-data-card-header">
         <div>
-          <div className="mobile-data-card-title">{formatMovimientoTipo(item.tipo)}</div>
+          <div className="mobile-data-card-title">{formatMovimientoTipo(item.tipo, item.referenciaTipo)}</div>
           <div className="mobile-data-card-subtitle">{formatDateTime(item.fecha)}</div>
         </div>
 
-        <span className="badge-soft">{item.referenciaTipo || 'movimiento'}</span>
+        <span className="badge-soft">{formatReferenciaMovimiento(item.referenciaTipo)}</span>
       </div>
 
       <div className="mobile-data-grid">
@@ -87,11 +88,11 @@ export default function MovimientosTable({ items = [] }) {
                 items.map((item) => (
                   <tr key={item.id}>
                     <td>{formatDateTime(item.fecha)}</td>
-                    <td>{formatMovimientoTipo(item.tipo)}</td>
+                    <td>{formatMovimientoTipo(item.tipo, item.referenciaTipo)}</td>
                     <td>{item.productoNombre || '-'}</td>
                     <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
                     <td>{item.montoTotal ? formatCurrency(item.montoTotal) : '-'}</td>
-                    <td>{item.referenciaTipo || '-'}</td>
+                    <td>{formatReferenciaMovimiento(item.referenciaTipo)}</td>
                     <td>{item.detalleLogistico || item.motivo || '-'}</td>
                     <td>{item.usuarioEmail || '-'}</td>
                   </tr>

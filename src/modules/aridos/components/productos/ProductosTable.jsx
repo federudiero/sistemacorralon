@@ -1,6 +1,8 @@
 import { describeProductoUnidad, formatCurrency, formatQuantity } from '../../utils/formatters';
 
 function ProductoCard({ item, onEdit, canEdit }) {
+  const costoActual = item.costoActual ?? item.costoPromedio;
+
   return (
     <div className="mobile-data-card">
       <div className="mobile-data-card-header">
@@ -24,8 +26,8 @@ function ProductoCard({ item, onEdit, canEdit }) {
           <span className="mobile-data-value">{formatCurrency(item.precioVenta)}</span>
         </div>
         <div>
-          <span className="mobile-data-label">Costo promedio</span>
-          <span className="mobile-data-value">{formatCurrency(item.costoPromedio)}</span>
+          <span className="mobile-data-label">Costo actual</span>
+          <span className="mobile-data-value">{formatCurrency(costoActual)}</span>
         </div>
         <div>
           <span className="mobile-data-label">Stock actual</span>
@@ -89,7 +91,7 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
                 <th>Categoría</th>
                 <th>Unidad</th>
                 <th>Precio venta</th>
-                <th>Costo promedio</th>
+                <th>Costo actual</th>
                 <th>Stock actual</th>
                 <th>Stock mínimo</th>
                 <th>Activo</th>
@@ -97,43 +99,47 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.nombre || '-'}</td>
-                  <td>{item.categoria || '-'}</td>
-                  <td>{describeProductoUnidad(item)}</td>
-                  <td>{formatCurrency(item.precioVenta)}</td>
-                  <td>{formatCurrency(item.costoPromedio)}</td>
-                  <td>
-                    {formatQuantity(
-                      item.stockActual ?? item.stockTotalM3,
-                      item.unidadStock || item.unidad,
-                      item.pesoBolsaKg,
-                    )}
-                  </td>
-                  <td>
-                    {formatQuantity(
-                      item.stockMinimo ?? item.stockMinimoM3,
-                      item.unidadStock || item.unidad,
-                      item.pesoBolsaKg,
-                    )}
-                  </td>
-                  <td>
-                    <span className={`badge ${item.activo === false ? 'badge-error' : 'badge-success'}`}>
-                      {item.activo === false ? 'No' : 'Sí'}
-                    </span>
-                  </td>
-                  <td>
-                    {canEdit ? (
-                      <button className="btn btn-xs btn-outline" onClick={() => onEdit?.(item)}>
-                        Editar
-                      </button>
-                    ) : (
-                      <span className="text-xs opacity-60">Solo lectura</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {items.map((item) => {
+                const costoActual = item.costoActual ?? item.costoPromedio;
+
+                return (
+                  <tr key={item.id}>
+                    <td>{item.nombre || '-'}</td>
+                    <td>{item.categoria || '-'}</td>
+                    <td>{describeProductoUnidad(item)}</td>
+                    <td>{formatCurrency(item.precioVenta)}</td>
+                    <td>{formatCurrency(costoActual)}</td>
+                    <td>
+                      {formatQuantity(
+                        item.stockActual ?? item.stockTotalM3,
+                        item.unidadStock || item.unidad,
+                        item.pesoBolsaKg,
+                      )}
+                    </td>
+                    <td>
+                      {formatQuantity(
+                        item.stockMinimo ?? item.stockMinimoM3,
+                        item.unidadStock || item.unidad,
+                        item.pesoBolsaKg,
+                      )}
+                    </td>
+                    <td>
+                      <span className={`badge ${item.activo === false ? 'badge-error' : 'badge-success'}`}>
+                        {item.activo === false ? 'No' : 'Sí'}
+                      </span>
+                    </td>
+                    <td>
+                      {canEdit ? (
+                        <button className="btn btn-xs btn-outline" onClick={() => onEdit?.(item)}>
+                          Editar
+                        </button>
+                      ) : (
+                        <span className="text-xs opacity-60">Solo lectura</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

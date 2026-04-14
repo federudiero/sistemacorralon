@@ -7,6 +7,7 @@ import {
   requireString,
 } from '../utils/validators';
 import { MOVIMIENTO_TIPOS, VENTA_ESTADOS } from '../utils/constants';
+import { buildDateStr, parseInputDate, formatVehiculoEntrega } from '../utils/formatters';
 import { subscribeCollection, docRef } from './base';
 
 function normalizePayload(payload = {}) {
@@ -16,8 +17,10 @@ function normalizePayload(payload = {}) {
   requireNonNegativeNumber(payload.precioUnitario ?? 0, 'precio unitario');
   requireNonNegativeNumber(payload.envioMonto ?? 0, 'envío');
 
-  const fecha = payload.fecha ? new Date(payload.fecha) : new Date();
-  const fechaStr = `${fecha.getFullYear()}-${`${fecha.getMonth() + 1}`.padStart(2, '0')}-${`${fecha.getDate()}`.padStart(2, '0')}`;
+  const fecha = payload.fecha
+    ? parseInputDate(payload.fecha, { baseTime: new Date() })
+    : new Date();
+  const fechaStr = buildDateStr(fecha);
   const subtotal = Number(payload.cantidad) * Number(payload.precioUnitario || 0);
   const envioMonto = Number(payload.tipoEntrega === 'envio' ? payload.envioMonto || 0 : 0);
   const total = subtotal + envioMonto;
@@ -53,7 +56,7 @@ function getStockActual(producto) {
   return Number(producto.stockActual ?? producto.stockTotalM3 ?? 0);
 }
 
-export async function createVenta(cuentaId, payload, userEmail) {
+async function createVenta(cuentaId, payload, userEmail) {
   const data = normalizePayload(payload);
 
   const productoRef = doc(db, `cuentas/${cuentaId}/productos/${data.productoId}`);
@@ -105,8 +108,8 @@ export async function createVenta(cuentaId, payload, userEmail) {
       referenciaId: ventaDoc.id,
       motivo:
         data.tipoEntrega === 'envio'
-          ? `Envío ${data.vehiculoEntrega || ''}`.trim()
-          : 'Retiro en corralón',
+          ? `Se lo llevamos${data.vehiculoEntrega ? ` · ${formatVehiculoEntrega(data.vehiculoEntrega)}` : ''}`
+          : 'Retira cliente',
       detalleLogistico: data.detalleEntrega || data.observaciones || '',
       usuarioEmail: userEmail || null,
       createdAt: serverTimestamp(),
@@ -114,7 +117,7 @@ export async function createVenta(cuentaId, payload, userEmail) {
   });
 }
 
-export async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
+async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
   const ventaRef = doc(db, `cuentas/${cuentaId}/ventas/${ventaId}`);
   const movimientosRef = collection(db, `cuentas/${cuentaId}/movimientosStock`);
 
@@ -176,9 +179,33 @@ export async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
   });
 }
 
-export function subscribeVentas(cuentaId, filters, callback) {
+function subscribeVentas(cuentaId, filters, callback) {
   return subscribeCollection(cuentaId, 'ventas', callback, {
     orderBy: [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
   });
 }
+
+function subscribeVentasAgenda(cuentaId, range = {}, callback) {
+  const fechaDesde = parseInputDate(range?.fechaDesde, {
+    baseTime: new Date(2000, 0, 1, 0, 0, 0, 0),
+  });
+  const fechaHasta = parseInputDate(range?.fechaHasta, { endOfDay: true });
+
+  const where = [];
+  if (fechaDesde) where.push({ field: 'fecha', op: '>=', value: fechaDesde });
+  if (fechaHasta) where.push({ field: 'fecha', op: '<=', value: fechaHasta });
+
+  return subscribeCollection(cuentaId, 'ventas', callback, {
+    where,
+    orderBy: [{ field: 'fecha', direction: 'asc' }],
+    limit: range?.limit || 500,
+  });
+}
+
+export {
+  createVenta,
+  anularVenta,
+  subscribeVentas,
+  subscribeVentasAgenda,
+};

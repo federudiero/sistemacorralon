@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'aridos_cuenta_context';
+const AUTH_STORAGE_KEY = 'aridos_auth_user';
 const CuentaContext = createContext(null);
 
 function normalizeCuentaId(value) {
@@ -15,16 +16,24 @@ function normalizeCuentaId(value) {
     .replace(/^-|-$/g, '');
 }
 
+function buildCuentaState(source) {
+  return {
+    cuentaId: normalizeCuentaId(source?.cuentaId),
+    cuentaNombre: String(source?.cuentaNombre || '').trim(),
+  };
+}
+
 function readStoredCuenta() {
   if (typeof window === 'undefined') return { cuentaId: '', cuentaNombre: '' };
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { cuentaId: '', cuentaNombre: '' };
-    const parsed = JSON.parse(raw);
-    return {
-      cuentaId: normalizeCuentaId(parsed?.cuentaId),
-      cuentaNombre: String(parsed?.cuentaNombre || '').trim(),
-    };
+    if (raw) return buildCuentaState(JSON.parse(raw));
+
+    const authRaw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (authRaw) return buildCuentaState(JSON.parse(authRaw));
+
+    return { cuentaId: '', cuentaNombre: '' };
   } catch {
     return { cuentaId: '', cuentaNombre: '' };
   }
@@ -38,25 +47,44 @@ export function CuentaProvider({ children }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const value = useMemo(() => ({
-    cuentaId: state.cuentaId,
-    cuentaNombre: state.cuentaNombre,
-    setCuenta: ({ cuentaId, cuentaNombre = '' }) => {
-      const normalizedId = normalizeCuentaId(cuentaId);
-      setState({
-        cuentaId: normalizedId,
-        cuentaNombre: String(cuentaNombre || '').trim(),
-      });
-    },
-    setCuentaId: (cuentaId) => {
-      setState((prev) => ({ ...prev, cuentaId: normalizeCuentaId(cuentaId) }));
-    },
-    setCuentaNombre: (cuentaNombre) => {
-      setState((prev) => ({ ...prev, cuentaNombre: String(cuentaNombre || '').trim() }));
-    },
-    clearCuenta: () => setState({ cuentaId: '', cuentaNombre: '' }),
-    hasCuenta: Boolean(state.cuentaId),
-  }), [state]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    function handleAuthUserChanged(event) {
+      const nextUser = event.detail;
+
+      if (!nextUser) {
+        setState({ cuentaId: '', cuentaNombre: '' });
+        return;
+      }
+
+      setState(buildCuentaState(nextUser));
+    }
+
+    window.addEventListener('aridos-auth-user-changed', handleAuthUserChanged);
+    return () => {
+      window.removeEventListener('aridos-auth-user-changed', handleAuthUserChanged);
+    };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      cuentaId: state.cuentaId,
+      cuentaNombre: state.cuentaNombre,
+      setCuenta: ({ cuentaId, cuentaNombre = '' }) => {
+        setState(buildCuentaState({ cuentaId, cuentaNombre }));
+      },
+      setCuentaId: (cuentaId) => {
+        setState((prev) => ({ ...prev, cuentaId: normalizeCuentaId(cuentaId) }));
+      },
+      setCuentaNombre: (cuentaNombre) => {
+        setState((prev) => ({ ...prev, cuentaNombre: String(cuentaNombre || '').trim() }));
+      },
+      clearCuenta: () => setState({ cuentaId: '', cuentaNombre: '' }),
+      hasCuenta: Boolean(state.cuentaId),
+    }),
+    [state],
+  );
 
   return <CuentaContext.Provider value={value}>{children}</CuentaContext.Provider>;
 }

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCuenta } from '../../contexts/CuentaContext';
 import { useThemeMode } from '../../contexts/ThemeContext';
@@ -21,7 +21,6 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
   const { mode, toggleMode } = useThemeMode();
   const location = useLocation();
   const screenTitle = getScreenTitle(location.pathname);
-  const isVentas = location.pathname.startsWith('/aridos/ventas');
 
   return (
     <header className="topbar-shell">
@@ -46,12 +45,6 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
           </div>
 
           <div className="topbar-mobile-actions">
-            {!isVentas ? (
-              <Link to="/aridos/ventas" className="h-10 px-3 btn btn-primary btn-sm xl:hidden">
-                + Venta
-              </Link>
-            ) : null}
-
             <button
               type="button"
               className="theme-toggle-btn topbar-theme-btn"

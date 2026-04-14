@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import PageHeader from '../components/shared/PageHeader';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
 import useDashboardAridos from '../hooks/useDashboardAridos';
@@ -33,37 +32,6 @@ function SimpleList({ title, items = [], renderItem, empty = 'Sin datos para la 
   );
 }
 
-function QuickActions({ readOnly }) {
-  const items = [
-    { to: '/aridos/ventas', label: 'Nueva venta', tone: 'btn-primary' },
-    { to: '/aridos/ingresos', label: 'Registrar reposición', tone: 'btn-outline' },
-    { to: '/aridos/cierre-caja', label: 'Cierre diario', tone: 'btn-outline' },
-    { to: '/aridos/movimientos', label: 'Ver movimientos', tone: 'btn-ghost' },
-  ];
-
-  return (
-    <div className="page-section">
-      <div className="page-section-body">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="text-lg font-semibold text-white">Acciones rápidas</h3>
-          <span className="badge-soft">uso diario</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {items.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`btn ${item.tone} h-14 rounded-2xl text-sm md:text-base ${readOnly ? 'btn-disabled pointer-events-none' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AridosDashboardPage({ cuentaId, security }) {
   const [filters, setFilters] = useState({ fecha: toInputDate(new Date()) });
   const { data, loading, error } = useDashboardAridos(cuentaId, filters);
@@ -84,14 +52,13 @@ export default function AridosDashboardPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Dashboard corralón" subtitle="Resumen operativo por fecha de ventas, reposición, stock y alertas." actions={actions} />
+      <PageHeader title="Dashboard corralón" subtitle="Resumen operativo por fecha, stock, reposición y alertas." actions={actions} />
       {security?.isReadOnly ? <ReadOnlyBanner message="Entraste en modo solo lectura. Podés consultar métricas y reportes, pero no registrar operaciones." /> : null}
-      <QuickActions readOnly={security?.isReadOnly} />
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : data ? (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiCard title="Ventas del día" value={formatCurrency(data.ventasHoyMonto)} subtitle={`${data.ventasHoyOperaciones} operaciones • envíos cobrados ${formatCurrency(data.ventasHoyEnvio)}`} />
+            <KpiCard title="Ventas del día" value={formatCurrency(data.ventasHoyMonto)} subtitle={`${data.ventasHoyOperaciones} operaciones • flete cobrado ${formatCurrency(data.ventasHoyEnvio)}`} />
             <KpiCard title="Reposición del día" value={String(data.ingresosHoyOperaciones || 0)} subtitle={`Ingresos registrados • costo ${formatCurrency(data.ingresosHoyCosto)}`} />
             <KpiCard title="Cobertura de stock" value={formatPercent(data.coberturaStockPct)} subtitle={`${data.productosActivos} productos activos • ${data.alertas.productosSinStock} sin stock`} />
             <KpiCard title="Stock crítico" value={String(data.stockCritico.length)} subtitle={`${data.alertas.movimientosAjusteDia} ajustes / mermas en la fecha`} />
@@ -127,11 +94,11 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold text-white">Ventas por modalidad</div>
+                  <div className="mb-2 text-sm font-semibold text-white">Ventas por entrega</div>
                   <div className="space-y-2">
                     {data.ventasPorEntregaDia.length ? data.ventasPorEntregaDia.map((item) => (
                       <div key={item.key} className="flex items-center justify-between px-3 py-2 text-sm border rounded-xl border-white/10">
-                        <span className="capitalize text-slate-300">{item.key === 'retiro' ? 'Retiro en corralón' : 'Envío a domicilio'}</span>
+                        <span className="capitalize text-slate-300">{item.key === 'retiro' ? 'Retira cliente' : 'Se lo llevamos'}</span>
                         <span className="font-semibold text-white">{formatCurrency(item.value)}</span>
                       </div>
                     )) : <div className="text-sm text-slate-400">Sin entregas para la fecha.</div>}
@@ -225,7 +192,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                     {data.ultimosMovimientos.length ? data.ultimosMovimientos.map((item) => (
                       <tr key={item.id}>
                         <td>{item.fechaStr || '-'}</td>
-                        <td>{formatMovimientoTipo(item.tipo)}</td>
+                        <td>{formatMovimientoTipo(item.tipo, item.referenciaTipo)}</td>
                         <td>{item.productoNombre || '-'}</td>
                         <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
                         <td>{item.montoTotal ? formatCurrency(item.montoTotal) : '-'}</td>
