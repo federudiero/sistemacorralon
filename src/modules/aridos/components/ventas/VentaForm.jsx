@@ -9,7 +9,11 @@ import {
   TIPOS_ENTREGA,
   VEHICULOS_ENVIO,
 } from '../../utils/constants';
-import { describeProductoUnidad, formatCurrency } from '../../utils/formatters';
+import {
+  describeProductoUnidad,
+  formatCurrency,
+  formatQuantity,
+} from '../../utils/formatters';
 
 const INITIAL_FORM = {
   clienteId: '',
@@ -97,9 +101,10 @@ export default function VentaForm({
   const subtotal = Number(form.cantidad || 0) * Number(form.precioUnitario || 0);
   const envioMonto = form.tipoEntrega === 'envio' ? Number(form.envioMonto || 0) : 0;
   const totalFinal = subtotal + envioMonto;
+  const blocked = saving || disabled || cajaCerrada || checkingClose;
 
   async function handleSubmit() {
-    if (disabled || cajaCerrada) return;
+    if (blocked) return;
 
     setSaving(true);
     setError('');
@@ -129,23 +134,47 @@ export default function VentaForm({
     }
   }
 
-  const blocked = saving || disabled || cajaCerrada || checkingClose;
-
   return (
     <div className="mb-4 page-section">
-      <div className="space-y-5 page-section-body">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Registrar venta</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Cargá ventas para retiro o envío. Podés usar cliente genérico para mostrador u ocasionales.
-          </p>
+      <div className="space-y-5 page-section-body pb-28 md:pb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Registrar venta</h2>
+            <p className="mt-1 text-sm text-slate-300">
+              Pensado para mostrador y uso rápido desde teléfono.
+            </p>
+          </div>
+
+          <div className="p-3 border rounded-2xl border-white/10 bg-white/5">
+            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">
+              Cliente actual
+            </div>
+            <div className="mt-1 text-sm font-medium text-white">
+              {cliente?.nombre || 'Sin cliente'}
+            </div>
+          </div>
         </div>
 
         {cajaCerrada ? (
           <div className="alert alert-warning">
-            El día {todayStr} ya está cerrado. No se pueden registrar ventas nuevas hasta abrir un nuevo día operativo.
+            El día {todayStr} ya está cerrado. No se pueden registrar ventas nuevas.
           </div>
         ) : null}
+
+        <div className="mobile-summary-strip md:hidden">
+          <div>
+            <div className="mobile-summary-label">Producto</div>
+            <div className="mobile-summary-value">{producto?.nombre || 'Seleccionar'}</div>
+          </div>
+          <div>
+            <div className="mobile-summary-label">Cantidad</div>
+            <div className="mobile-summary-value">
+              {producto
+                ? formatQuantity(form.cantidad || 0, producto.unidadStock || producto.unidad, producto.pesoBolsaKg)
+                : '0'}
+            </div>
+          </div>
+        </div>
 
         <div className="form-grid">
           <EntitySearchSelect
@@ -259,7 +288,7 @@ export default function VentaForm({
           </label>
 
           <label className="form-control form-grid-wide">
-            <span className="field-label">Detalle de entrega / dirección manual</span>
+            <span className="field-label">Detalle de entrega / dirección</span>
             <input
               className="h-12 input input-bordered"
               value={form.detalleEntrega}
@@ -273,6 +302,7 @@ export default function VentaForm({
             <div className="text-xs uppercase tracking-[0.14em] text-slate-400">
               Resumen económico
             </div>
+
             <div className="grid gap-3 mt-3 md:grid-cols-3">
               <div>
                 <div className="text-sm text-slate-300">Subtotal</div>
@@ -280,12 +310,14 @@ export default function VentaForm({
                   {formatCurrency(subtotal)}
                 </div>
               </div>
+
               <div>
                 <div className="text-sm text-slate-300">Envío</div>
                 <div className="mt-1 text-xl font-semibold text-white">
                   {formatCurrency(envioMonto)}
                 </div>
               </div>
+
               <div>
                 <div className="text-sm text-slate-300">Total final</div>
                 <div className="mt-1 text-xl font-semibold text-white">
@@ -298,7 +330,7 @@ export default function VentaForm({
           <label className="form-control form-grid-wide">
             <span className="field-label">Observaciones</span>
             <textarea
-              className="textarea textarea-bordered min-h-28"
+              className="textarea textarea-bordered min-h-24"
               value={form.observaciones}
               onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))}
               disabled={blocked}
@@ -312,10 +344,31 @@ export default function VentaForm({
 
         {error ? <div className="alert alert-error">{error}</div> : null}
 
-        <div className="form-actions">
+        <div className="hidden form-actions md:flex">
           <button className="px-6 btn btn-primary h-11" onClick={handleSubmit} disabled={blocked}>
             {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
           </button>
+        </div>
+
+        <div className="mobile-sticky-actionbar md:hidden">
+          <div className="mobile-sticky-actionbar-inner">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                Total a cobrar
+              </div>
+              <div className="text-lg font-semibold text-white truncate">
+                {formatCurrency(totalFinal)}
+              </div>
+            </div>
+
+            <button
+              className="btn btn-primary h-12 min-w-[148px] px-5"
+              onClick={handleSubmit}
+              disabled={blocked}
+            >
+              {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

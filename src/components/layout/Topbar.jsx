@@ -1,35 +1,76 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCuenta } from '../../contexts/CuentaContext';
+import { useThemeMode } from '../../contexts/ThemeContext';
 
-export default function Topbar() {
+function getScreenTitle(pathname) {
+  if (pathname.startsWith('/aridos/ventas')) return 'Ventas';
+  if (pathname.startsWith('/aridos/ingresos')) return 'Reposición';
+  if (pathname.startsWith('/aridos/cierre-caja')) return 'Cierre';
+  if (pathname.startsWith('/aridos/productos')) return 'Productos';
+  if (pathname.startsWith('/aridos/clientes')) return 'Clientes';
+  if (pathname.startsWith('/aridos/movimientos')) return 'Movimientos';
+  if (pathname.startsWith('/aridos/reportes')) return 'Reportes';
+  if (pathname.startsWith('/aridos')) return 'Dashboard';
+  return 'Sistema Corralón';
+}
+
+export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
   const { user, logout } = useAuth();
   const { cuentaId, cuentaNombre } = useCuenta();
+  const { mode, toggleMode } = useThemeMode();
+  const location = useLocation();
+  const screenTitle = getScreenTitle(location.pathname);
+  const isVentas = location.pathname.startsWith('/aridos/ventas');
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur">
-      <div className="app-container py-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <Link to="/aridos" className="text-2xl font-semibold tracking-tight text-white hover:text-primary">
-              Sistema Corralón
-            </Link>
-            <p className="mt-1 text-sm text-slate-400">Operación de áridos y control de stock por cuenta de corralón.</p>
+    <header className="topbar-shell">
+      <div className="py-3 app-container md:py-4">
+        <div className="topbar-compact-row">
+          <div className="flex items-center min-w-0 gap-3">
+            <button
+              type="button"
+              className="btn btn-square btn-outline btn-sm topbar-mobile-btn xl:hidden"
+              onClick={onOpenMenu}
+              aria-label={mobileSidebarOpen ? 'Menú abierto' : 'Abrir menú'}
+            >
+              ☰
+            </button>
+
+            <div className="min-w-0">
+              <div className="topbar-screen-title">{screenTitle}</div>
+              <p className="hidden topbar-screen-subtitle sm:block">
+                {cuentaNombre || cuentaId || 'Sin cuenta seleccionada'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left">
-              <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Cuenta activa</div>
-              <div className="mt-1 text-sm font-medium text-white">{cuentaNombre || cuentaId || 'Sin cuenta seleccionada'}</div>
-              <div className="text-xs text-slate-400">{cuentaId || '-'}</div>
-            </div>
+          <div className="topbar-mobile-actions">
+            {!isVentas ? (
+              <Link to="/aridos/ventas" className="h-10 px-3 btn btn-primary btn-sm xl:hidden">
+                + Venta
+              </Link>
+            ) : null}
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-              <div className="text-sm font-medium text-white">{user?.name || 'Usuario'}</div>
-              <div className="text-xs text-slate-400">{user?.email}</div>
-            </div>
+            <button
+              type="button"
+              className="theme-toggle-btn topbar-theme-btn"
+              onClick={toggleMode}
+              aria-label={mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
+            </button>
 
-            <button className="btn btn-sm btn-outline h-11 px-5" onClick={logout}>Salir</button>
+            <button className="h-10 px-2 btn btn-ghost btn-sm sm:px-3" onClick={logout}>
+              Salir
+            </button>
+          </div>
+        </div>
+
+        <div className="hidden topbar-desktop-row md:flex">
+          <div className="topbar-info-card user-card">
+            <div className="text-sm font-medium text-white truncate">{user?.name || 'Usuario'}</div>
+            <div className="text-xs truncate text-slate-400">{user?.email}</div>
           </div>
         </div>
       </div>

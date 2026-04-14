@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageHeader from '../components/shared/PageHeader';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
 import useDashboardAridos from '../hooks/useDashboardAridos';
@@ -18,15 +19,46 @@ function SimpleList({ title, items = [], renderItem, empty = 'Sin datos para la 
   return (
     <div className="page-section">
       <div className="page-section-body">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
           <span className="badge-soft">{items.length} registros</span>
         </div>
         {items.length ? (
           <div className="space-y-3">{items.map(renderItem)}</div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400">{empty}</div>
+          <div className="px-4 py-8 text-sm text-center border border-dashed rounded-2xl border-white/10 text-slate-400">{empty}</div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function QuickActions({ readOnly }) {
+  const items = [
+    { to: '/aridos/ventas', label: 'Nueva venta', tone: 'btn-primary' },
+    { to: '/aridos/ingresos', label: 'Registrar reposición', tone: 'btn-outline' },
+    { to: '/aridos/cierre-caja', label: 'Cierre diario', tone: 'btn-outline' },
+    { to: '/aridos/movimientos', label: 'Ver movimientos', tone: 'btn-ghost' },
+  ];
+
+  return (
+    <div className="page-section">
+      <div className="page-section-body">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="text-lg font-semibold text-white">Acciones rápidas</h3>
+          <span className="badge-soft">uso diario</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {items.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`btn ${item.tone} h-14 rounded-2xl text-sm md:text-base ${readOnly ? 'btn-disabled pointer-events-none' : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -37,12 +69,12 @@ export default function AridosDashboardPage({ cuentaId, security }) {
   const { data, loading, error } = useDashboardAridos(cuentaId, filters);
 
   const actions = useMemo(() => (
-    <div className="flex flex-wrap gap-2">
-      <label className="form-control w-full sm:w-auto">
+    <div className="flex flex-wrap w-full gap-2 sm:w-auto">
+      <label className="w-full form-control sm:w-auto">
         <span className="field-label">Fecha operativa</span>
         <input
           type="date"
-          className="input input-bordered h-12 min-w-52"
+          className="h-12 min-w-0 input input-bordered sm:min-w-52"
           value={filters.fecha}
           onChange={(e) => setFilters((prev) => ({ ...prev, fecha: e.target.value }))}
         />
@@ -54,6 +86,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
     <div className="space-y-4">
       <PageHeader title="Dashboard corralón" subtitle="Resumen operativo por fecha de ventas, reposición, stock y alertas." actions={actions} />
       {security?.isReadOnly ? <ReadOnlyBanner message="Entraste en modo solo lectura. Podés consultar métricas y reportes, pero no registrar operaciones." /> : null}
+      <QuickActions readOnly={security?.isReadOnly} />
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : data ? (
         <>
@@ -66,17 +99,17 @@ export default function AridosDashboardPage({ cuentaId, security }) {
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <div className="page-section">
-              <div className="page-section-body space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-4 page-section-body">
+                <div className="flex items-center justify-between gap-3">
                   <h3 className="text-lg font-semibold text-white">Resumen del día</h3>
                   <span className="badge-soft">{data.fecha}</span>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="p-4 border rounded-2xl border-white/10 bg-white/5">
                     <div className="text-sm text-slate-300">Cantidad vendida</div>
                     <div className="mt-2 text-2xl font-semibold text-white">{Number(data.ventasHoyCantidad || 0).toFixed(2)}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="p-4 border rounded-2xl border-white/10 bg-white/5">
                     <div className="text-sm text-slate-300">Venta del mes</div>
                     <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(data.ventasMesMonto)}</div>
                     <div className="mt-1 text-sm text-slate-400">{data.ventasMesOperaciones} operaciones del mes</div>
@@ -86,7 +119,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                   <div className="mb-2 text-sm font-semibold text-white">Ventas por forma de pago</div>
                   <div className="space-y-2">
                     {data.ventasPorPagoDia.length ? data.ventasPorPagoDia.map((item) => (
-                      <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 text-sm border rounded-xl border-white/10">
                         <span className="capitalize text-slate-300">{item.key.replaceAll('_', ' ')}</span>
                         <span className="font-semibold text-white">{formatCurrency(item.value)}</span>
                       </div>
@@ -97,38 +130,38 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                   <div className="mb-2 text-sm font-semibold text-white">Ventas por modalidad</div>
                   <div className="space-y-2">
                     {data.ventasPorEntregaDia.length ? data.ventasPorEntregaDia.map((item) => (
-                      <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 text-sm border rounded-xl border-white/10">
                         <span className="capitalize text-slate-300">{item.key === 'retiro' ? 'Retiro en corralón' : 'Envío a domicilio'}</span>
                         <span className="font-semibold text-white">{formatCurrency(item.value)}</span>
                       </div>
-                    )) : <div className="text-sm text-slate-400">Sin operaciones para la fecha.</div>}
+                    )) : <div className="text-sm text-slate-400">Sin entregas para la fecha.</div>}
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="page-section">
-              <div className="page-section-body space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">Top de materiales</h3>
-                  <span className="badge-soft">día y mes</span>
+              <div className="space-y-4 page-section-body">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-white">Materiales destacados</h3>
+                  <span className="badge-soft">día / mes</span>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold text-white">Más vendidos del día</div>
+                  <div className="mb-2 text-sm font-semibold text-white">Top del día</div>
                   <div className="space-y-2">
                     {data.topProductosDia.length ? data.topProductosDia.map((item) => (
-                      <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 text-sm border rounded-xl border-white/10">
                         <span className="text-slate-300">{item.key}</span>
-                        <span className="font-semibold text-white">{Number(item.value).toFixed(2)}</span>
+                        <span className="font-semibold text-white">{formatCurrency(item.value)}</span>
                       </div>
-                    )) : <div className="text-sm text-slate-400">Todavía no hay materiales vendidos ese día.</div>}
+                    )) : <div className="text-sm text-slate-400">Sin ventas del día.</div>}
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold text-white">Mayor facturación del mes</div>
+                  <div className="mb-2 text-sm font-semibold text-white">Top del mes</div>
                   <div className="space-y-2">
                     {data.topProductosMes.length ? data.topProductosMes.map((item) => (
-                      <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 text-sm border rounded-xl border-white/10">
                         <span className="text-slate-300">{item.key}</span>
                         <span className="font-semibold text-white">{formatCurrency(item.value)}</span>
                       </div>
@@ -144,7 +177,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
               title="Reposición del día por producto"
               items={data.reposicionPorProductoDia}
               renderItem={(item) => (
-                <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-3 text-sm">
+                <div key={item.key} className="flex items-center justify-between px-3 py-3 text-sm border rounded-xl border-white/10">
                   <span className="text-slate-300">{item.key}</span>
                   <span className="font-semibold text-white">{Number(item.value).toFixed(2)}</span>
                 </div>
@@ -152,7 +185,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
             />
             <div className="page-section xl:col-span-2">
               <div className="page-section-body">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 mb-4">
                   <h3 className="text-lg font-semibold text-white">Stock crítico</h3>
                   <span className="badge-soft">{data.stockCritico.length} productos</span>
                 </div>
@@ -179,7 +212,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
 
           <div className="page-section">
             <div className="page-section-body">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 mb-4">
                 <h3 className="text-lg font-semibold text-white">Últimos movimientos</h3>
                 <span className="badge-soft">12 más recientes</span>
               </div>
