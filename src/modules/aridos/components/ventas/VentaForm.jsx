@@ -143,12 +143,28 @@ export default function VentaForm({
 
   return (
     <div className="mb-4 page-section">
-      <div className="pb-4 space-y-5 page-section-body md:pb-6">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Registrar venta</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Podés registrar la venta para hoy o dejarla programada en otra fecha operativa.
+      <div className="page-section-body space-y-5 pb-4 md:pb-6">
+        <div className="space-y-2">
+          <div className="app-eyebrow">Venta rápida</div>
+          <h2 className="page-title !text-[1.45rem] md:!text-[1.8rem]">Registrar venta</h2>
+          <p className="page-subtitle">
+            Cargá la fecha, elegí cliente y producto, definí si es retiro o envío y confirmá el total final.
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="app-inline-meta">
+            <span className="app-muted-text">Fecha operativa</span>
+            <strong className="app-title-text">{fechaOperativa}</strong>
+          </div>
+          <div className="app-inline-meta">
+            <span className="app-muted-text">Entrega</span>
+            <strong className="app-title-text">{isEnvio ? 'Envío a domicilio' : 'Retiro en corralón'}</strong>
+          </div>
+          <div className="app-inline-meta">
+            <span className="app-muted-text">Total actual</span>
+            <strong className="app-title-text">{formatCurrency(totalFinal)}</strong>
+          </div>
         </div>
 
         {cajaCerrada ? (
@@ -193,15 +209,15 @@ export default function VentaForm({
           />
 
           {cliente?.telefono || cliente?.direccion ? (
-            <div className="px-4 py-3 border form-grid-wide rounded-2xl border-base-300/70 bg-base-200/50">
+            <div className="form-grid-wide app-soft-panel rounded-2xl border px-4 py-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <div className="field-label">Teléfono</div>
-                  <div className="mt-1 text-sm text-base-content/80">{cliente?.telefono || '-'}</div>
+                  <div className="mt-1 text-sm app-soft-text">{cliente?.telefono || '-'}</div>
                 </div>
                 <div>
                   <div className="field-label">Dirección</div>
-                  <div className="mt-1 text-sm text-base-content/80">{cliente?.direccion || '-'}</div>
+                  <div className="mt-1 text-sm app-soft-text">{cliente?.direccion || '-'}</div>
                 </div>
               </div>
             </div>
@@ -244,7 +260,7 @@ export default function VentaForm({
           </label>
 
           <label className="w-full form-control">
-            <span className="field-label">Entrega</span>
+            <span className="field-label">Tipo de entrega</span>
             <select
               className="h-12 select select-bordered"
               value={form.tipoEntrega}
@@ -262,7 +278,7 @@ export default function VentaForm({
           {isEnvio ? (
             <>
               <label className="w-full form-control">
-                <span className="field-label">Flete</span>
+                <span className="field-label">Costo de envío</span>
                 <input
                   type="number"
                   className="h-12 input input-bordered"
@@ -287,7 +303,7 @@ export default function VentaForm({
           ) : null}
 
           <label className="form-control form-grid-wide">
-            <span className="field-label">Nota interna</span>
+            <span className="field-label">Observaciones</span>
             <textarea
               className="textarea textarea-bordered min-h-24"
               value={form.observaciones}
@@ -306,32 +322,28 @@ export default function VentaForm({
 
         <div className="hidden items-center justify-between gap-4 md:flex">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Total a cobrar</div>
-            <div className="mt-1 text-2xl font-semibold text-white">{formatCurrency(totalFinal)}</div>
-            <div className="mt-1 text-sm text-slate-400">
-              Fecha {fechaOperativa} • Subtotal {formatCurrency(subtotal)} {isEnvio ? `• Flete ${formatCurrency(envioMonto)}` : ''}
+            <div className="app-eyebrow">Total a cobrar</div>
+            <div className="mt-1 text-2xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
+            <div className="mt-1 text-sm app-muted-text">
+              Subtotal {formatCurrency(subtotal)} {isEnvio ? `• Envío ${formatCurrency(envioMonto)}` : '• Retiro'}
             </div>
           </div>
 
-          <div className="form-actions">
-            <button className="px-6 btn btn-primary h-11" onClick={handleSubmit} disabled={blocked}>
+          <div className="form-actions !border-t-0 !pt-0">
+            <button className="btn btn-primary h-12 px-6" onClick={handleSubmit} disabled={blocked}>
               {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
             </button>
           </div>
         </div>
 
         <div className="md:hidden">
-          <div className="rounded-2xl border border-base-300/70 bg-base-100 px-4 py-4 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
+          <div className="mobile-summary-strip">
+            <div className="mobile-summary-strip-inner">
               <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                  Total a cobrar
-                </div>
-                <div className="mt-1 text-xl font-semibold text-white">
-                  {formatCurrency(totalFinal)}
-                </div>
-                <div className="mt-1 text-xs text-slate-400">
-                  Fecha {fechaOperativa} • {isEnvio ? `Flete ${formatCurrency(envioMonto)}` : 'Retiro sin flete'}
+                <div className="app-eyebrow">Total a cobrar</div>
+                <div className="mt-1 text-xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
+                <div className="mt-1 text-xs app-muted-text">
+                  {isEnvio ? `Envío • ${formatCurrency(envioMonto)}` : 'Retiro'}
                 </div>
               </div>
 

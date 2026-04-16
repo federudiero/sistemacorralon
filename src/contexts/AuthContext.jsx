@@ -1,20 +1,17 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
 } from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebase';
+import { bootstrapOwnerAccount } from '../services/authBootstrap.service';
 
 const STORAGE_KEY = 'aridos_auth_user';
 const USERS_COLLECTION = 'aridos_usuarios';
@@ -81,9 +78,37 @@ function getFriendlyAuthError(error) {
   }
 }
 
+function waitForAuthenticatedUser(timeoutMs = 10000) {
+  if (auth.currentUser?.uid) {
+    return Promise.resolve(auth.currentUser);
+  }
+
+  return new Promise((resolve, reject) => {
+    let finished = false;
+
+    const timeoutId = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      unsubscribe();
+      reject(new Error('No se pudo establecer la sesión del usuario recién creado.'));
+    }, timeoutMs);
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (finished || !firebaseUser) return;
+      finished = true;
+      clearTimeout(timeoutId);
+      unsubscribe();
+      resolve(firebaseUser);
+    });
+  });
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readStoredUser);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  // UID del usuario recién creado mientras el backend arma el perfil
+  const bootstrapUidRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -116,6 +141,13 @@ export function AuthProvider({ children }) {
         const profile = await fetchUserProfile(firebaseUser.uid);
 
         if (!profile) {
+          // Durante el alta inicial todavía no existe el perfil porque lo crea Functions.
+          // En ese caso NO cerramos sesión.
+          if (bootstrapUidRef.current && bootstrapUidRef.current === firebaseUser.uid) {
+            setIsInitializing(false);
+            return;
+          }
+
           await signOut(auth);
           if (!active) return;
           setUser(null);
@@ -151,33 +183,64 @@ export function AuthProvider({ children }) {
     }
     if (!normalizedCuentaId) throw new Error('Ingresá el ID del corralón o cuenta.');
 
+    let createdUser = null;
+    let bootstrapped = false;
+
     try {
       setIsInitializing(true);
       await setPersistence(auth, browserLocalPersistence);
+
       const credentials = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      createdUser = credentials.user;
+
+      // Marcamos que este UID está en bootstrap para que el listener no lo desloguee.
+      bootstrapUidRef.current = createdUser.uid;
 
       if (normalizedName) {
-        await updateProfile(credentials.user, { displayName: normalizedName });
+        await updateProfile(createdUser, { displayName: normalizedName });
       }
 
-      const profile = {
-        uid: credentials.user.uid,
-        email: normalizedEmail,
-        name: normalizedName,
+      await createdUser.getIdToken(true);
+      await waitForAuthenticatedUser();
+
+      const bootstrapProfile = await bootstrapOwnerAccount({
         cuentaId: normalizedCuentaId,
         cuentaNombre: normalizedCuentaNombre,
-        role: 'owner',
-        active: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+        name: normalizedName,
+      });
 
-      await setDoc(doc(db, USERS_COLLECTION, credentials.user.uid), profile);
+      bootstrapped = true;
+      bootstrapUidRef.current = null;
 
-      const appUser = buildAppUser(credentials.user, profile);
+      const storedProfile = await fetchUserProfile(createdUser.uid);
+      const finalProfile = storedProfile || bootstrapProfile;
+
+      if (!finalProfile) {
+        throw new Error('El backend no devolvió el perfil del usuario owner.');
+      }
+
+      const appUser = buildAppUser(createdUser, finalProfile);
       setUser(appUser);
       return appUser;
     } catch (error) {
+      bootstrapUidRef.current = null;
+
+      if (createdUser && !bootstrapped) {
+        try {
+          if (auth.currentUser?.uid === createdUser.uid) {
+            await deleteUser(auth.currentUser);
+          } else {
+            await deleteUser(createdUser);
+          }
+        } catch {
+          try {
+            await signOut(auth);
+          } catch {
+            // noop
+          }
+        }
+      }
+
       throw new Error(getFriendlyAuthError(error));
     } finally {
       setIsInitializing(false);
@@ -212,6 +275,7 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    bootstrapUidRef.current = null;
     await signOut(auth);
     setUser(null);
   }

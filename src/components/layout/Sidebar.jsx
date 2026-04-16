@@ -20,32 +20,22 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
       <aside className={`sidebar-panel ${open ? 'is-open' : ''}`}>
         <div className="h-full overflow-hidden page-section xl:sticky xl:top-24 xl:h-fit">
-          <div className="flex flex-col h-full page-section-body">
+          <div className="flex h-full flex-col page-section-body sidebar-panel-body">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0 p-4 border rounded-3xl border-sky-500/20 bg-sky-500/10">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/80">
-                  Cuenta activa
-                </div>
+              <div className="app-account-card flex-1 min-w-0">
+                <div className="app-eyebrow">Cuenta activa</div>
+                <div className="app-account-title">{cuentaNombre || 'Corralón'}</div>
+                <div className="app-account-meta">{cuentaId || 'Sin ID definido'}</div>
 
-                <div className="mt-2 text-xl font-semibold text-white truncate xl:text-2xl">
-                  {cuentaNombre || 'Corralón'}
-                </div>
-
-                <div className="mt-1 text-sm truncate text-slate-200">
-                  {cuentaId || 'Sin ID definido'}
-                </div>
-
-                <div className="grid gap-2 mt-4 text-sm text-slate-300">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>Rol</span>
-                    <span className="badge-soft">{security.role}</span>
+                <div className="mt-4 grid gap-2.5 text-sm">
+                  <div className="app-account-row">
+                    <span className="app-muted-text">Rol</span>
+                    <span className="app-chip">{security.role}</span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3">
-                    <span>Usuario</span>
-                    <span className="badge-soft max-w-[55%] truncate">
-                      {user?.name || 'N/D'}
-                    </span>
+                  <div className="app-account-row">
+                    <span className="app-muted-text">Usuario</span>
+                    <span className="app-chip max-w-[62%] truncate">{user?.name || 'N/D'}</span>
                   </div>
                 </div>
               </div>
@@ -60,28 +50,32 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
               </button>
             </div>
 
-            <nav className="pr-1 mt-5 space-y-1 overflow-y-auto xl:pr-0">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={onClose}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <span className="truncate">{item.label}</span>
-                </NavLink>
-              ))}
+            <div className="mt-5 app-nav-shell">
+              <div className="app-eyebrow px-1">Navegación</div>
 
-              {!security.hasAccess ? (
-                <NavLink
-                  to="/setup"
-                  onClick={onClose}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  Inicialización
-                </NavLink>
-              ) : null}
-            </nav>
+              <nav className="mt-3 space-y-1 overflow-y-auto pr-1 xl:pr-0">
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onClose}
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                  >
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                ))}
+
+                {!security.hasAccess ? (
+                  <NavLink
+                    to="/setup"
+                    onClick={onClose}
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                  >
+                    Preparación inicial
+                  </NavLink>
+                ) : null}
+              </nav>
+            </div>
           </div>
         </div>
       </aside>

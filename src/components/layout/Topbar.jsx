@@ -5,11 +5,14 @@ import { useThemeMode } from '../../contexts/ThemeContext';
 
 function getScreenTitle(pathname) {
   if (pathname.startsWith('/aridos/ventas')) return 'Ventas';
+  if (pathname.startsWith('/aridos/agenda')) return 'Agenda';
   if (pathname.startsWith('/aridos/ingresos')) return 'Reposición';
   if (pathname.startsWith('/aridos/cierre-caja')) return 'Cierre';
   if (pathname.startsWith('/aridos/productos')) return 'Productos';
   if (pathname.startsWith('/aridos/clientes')) return 'Clientes';
+  if (pathname.startsWith('/aridos/proveedores')) return 'Proveedores';
   if (pathname.startsWith('/aridos/movimientos')) return 'Movimientos';
+  if (pathname.startsWith('/aridos/remitos')) return 'Remitos';
   if (pathname.startsWith('/aridos/reportes')) return 'Reportes';
   if (pathname.startsWith('/aridos')) return 'Dashboard';
   return 'Sistema Corralón';
@@ -24,9 +27,9 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
 
   return (
     <header className="topbar-shell">
-      <div className="py-3 app-container md:py-4">
+      <div className="app-container py-3 md:py-4">
         <div className="topbar-compact-row">
-          <div className="flex items-center min-w-0 gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               className="btn btn-square btn-outline btn-sm topbar-mobile-btn xl:hidden"
@@ -37,8 +40,9 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
             </button>
 
             <div className="min-w-0">
+              <div className="app-eyebrow">Cuenta activa</div>
               <div className="topbar-screen-title">{screenTitle}</div>
-              <p className="hidden topbar-screen-subtitle sm:block">
+              <p className="topbar-screen-subtitle truncate">
                 {cuentaNombre || cuentaId || 'Sin cuenta seleccionada'}
               </p>
             </div>
@@ -50,20 +54,22 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
               className="theme-toggle-btn topbar-theme-btn"
               onClick={toggleMode}
               aria-label={mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
             >
               <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
             </button>
 
-            <button className="h-10 px-2 btn btn-ghost btn-sm sm:px-3" onClick={logout}>
+            <button className="btn btn-ghost btn-sm h-10 px-3" onClick={logout}>
               Salir
             </button>
           </div>
         </div>
 
-        <div className="hidden topbar-desktop-row md:flex">
+        <div className="topbar-desktop-row">
           <div className="topbar-info-card user-card">
-            <div className="text-sm font-medium text-white truncate">{user?.name || 'Usuario'}</div>
-            <div className="text-xs truncate text-slate-400">{user?.email}</div>
+            <div className="text-xs app-muted-text">Usuario actual</div>
+            <div className="mt-1 text-sm font-semibold app-title-text truncate">{user?.name || 'Usuario'}</div>
+            <div className="text-xs app-muted-text truncate">{user?.email}</div>
           </div>
         </div>
       </div>

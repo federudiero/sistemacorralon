@@ -2,9 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 
 const ITEMS = [
   { to: '/aridos', label: 'Inicio', icon: '🏠' },
-  { to: '/aridos/ingresos', label: 'Ingreso', icon: '📦' },
-  { to: '/aridos/ventas', label: 'Venta', icon: '💸', primary: true },
-  { to: '/aridos/cierre-caja', label: 'Cierre', icon: '🧾' },
+  { to: '/aridos/ventas', label: 'Vender', icon: '💸', primary: true },
+  { to: '/aridos/ingresos', label: 'Reposición', icon: '📦' },
+  { to: '/aridos/agenda', label: 'Agenda', icon: '🗓️' },
 ];
 
 export default function MobileQuickActions() {

@@ -4,22 +4,36 @@ import useReportesAridos from '../hooks/useReportesAridos';
 import useProductos from '../hooks/useProductos';
 import { downloadCsv } from '../utils/csv';
 import { formatCurrency, formatDateTime, formatEntregaDisplay, formatMovimientoTipo, formatQuantity, monthStartInput, toInputDate } from '../utils/formatters';
-import { METODOS_PAGO, MOVIMIENTO_LABELS, TIPOS_ENTREGA, VENTA_ESTADOS } from '../utils/constants';
+import { METODOS_PAGO, TIPOS_ENTREGA, VENTA_ESTADOS } from '../utils/constants';
+import ReportesVentasTable from '../components/reportes/ReportesVentasTable';
+import ReportesMovimientosTable from '../components/reportes/ReportesMovimientosTable';
 
 function StatsList({ title, items = [], formatValue = (v) => v }) {
   return (
     <div className="page-section">
       <div className="page-section-body">
-        <h3 className="mb-4 text-lg font-semibold text-white">{title}</h3>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold app-title-text">{title}</h3>
+          <span className="badge-soft">{items.length} registros</span>
+        </div>
         <div className="space-y-2">
           {items.length ? items.map((item) => (
-            <div key={item.key} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
-              <span className="text-slate-300">{item.key}</span>
-              <span className="font-semibold text-white">{formatValue(item.value)}</span>
+            <div key={item.key} className="app-soft-panel flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
+              <span className="app-soft-text">{item.key}</span>
+              <span className="font-semibold app-title-text">{formatValue(item.value)}</span>
             </div>
-          )) : <div className="text-sm text-slate-400">Sin datos para el rango seleccionado.</div>}
+          )) : <div className="mobile-empty-state">Sin datos para el rango seleccionado.</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiMetric({ title, value }) {
+  return (
+    <div className="kpi-card">
+      <div className="text-sm app-muted-text">{title}</div>
+      <div className="mt-3 text-3xl font-semibold app-title-text">{value}</div>
     </div>
   );
 }
@@ -87,12 +101,12 @@ export default function ReportesPage({ cuentaId }) {
       {loading ? <div className="loading loading-spinner loading-lg" /> : (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="kpi-card"><div className="text-sm text-slate-300">Facturación</div><div className="mt-3 text-3xl font-semibold text-white">{formatCurrency(data?.resumen?.totalVentas || 0)}</div></div>
-            <div className="kpi-card"><div className="text-sm text-slate-300">Costo vendido</div><div className="mt-3 text-3xl font-semibold text-white">{formatCurrency(data?.resumen?.totalCostoVentas || 0)}</div></div>
-            <div className="kpi-card"><div className="text-sm text-slate-300">Margen bruto</div><div className="mt-3 text-3xl font-semibold text-white">{formatCurrency(data?.resumen?.totalMargenBruto || 0)}</div></div>
-            <div className="kpi-card"><div className="text-sm text-slate-300">Ventas registradas</div><div className="mt-3 text-3xl font-semibold text-white">{data?.resumen?.cantidadVentas || 0}</div></div>
-            <div className="kpi-card"><div className="text-sm text-slate-300">Cantidad vendida</div><div className="mt-3 text-3xl font-semibold text-white">{Number(data?.resumen?.totalCantidadVendida || 0).toFixed(2)}</div></div>
-            <div className="kpi-card"><div className="text-sm text-slate-300">Envíos cobrados</div><div className="mt-3 text-3xl font-semibold text-white">{formatCurrency(data?.resumen?.totalEnvio || 0)}</div></div>
+            <KpiMetric title="Facturación" value={formatCurrency(data?.resumen?.totalVentas || 0)} />
+            <KpiMetric title="Costo vendido" value={formatCurrency(data?.resumen?.totalCostoVentas || 0)} />
+            <KpiMetric title="Margen bruto" value={formatCurrency(data?.resumen?.totalMargenBruto || 0)} />
+            <KpiMetric title="Ventas registradas" value={data?.resumen?.cantidadVentas || 0} />
+            <KpiMetric title="Cantidad vendida" value={Number(data?.resumen?.totalCantidadVendida || 0).toFixed(2)} />
+            <KpiMetric title="Envíos cobrados" value={formatCurrency(data?.resumen?.totalEnvio || 0)} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -103,56 +117,8 @@ export default function ReportesPage({ cuentaId }) {
             <StatsList title="Clientes con mayor compra" items={data?.stats?.ventasPorCliente || []} formatValue={formatCurrency} />
           </div>
 
-          <div className="page-section">
-            <div className="page-section-body">
-              <h3 className="mb-4 text-lg font-semibold text-white">Ventas del período</h3>
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Pago</th><th>Entrega</th><th>Costo snapshot</th><th>Envío</th><th>Total</th><th>Estado</th></tr></thead>
-                  <tbody>
-                    {(data?.ventas || []).length ? data.ventas.map((item) => (
-                      <tr key={item.id}>
-                        <td>{formatDateTime(item.fecha)}</td>
-                        <td>{item.clienteNombre}</td>
-                        <td>{item.productoNombre}</td>
-                        <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
-                        <td>{item.metodoPago}</td>
-                        <td>{formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</td>
-                        <td>{formatCurrency(item.costoTotalSnapshot || 0)}</td>
-                        <td>{formatCurrency(item.envioMonto || 0)}</td>
-                        <td>{formatCurrency(item.total || 0)}</td>
-                        <td>{item.estado}</td>
-                      </tr>
-                    )) : <tr><td colSpan="10" className="text-center text-slate-400">Sin ventas en el rango filtrado.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div className="page-section">
-            <div className="page-section-body">
-              <h3 className="mb-4 text-lg font-semibold text-white">Movimientos del período</h3>
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Monto</th><th>Detalle</th><th>Usuario</th></tr></thead>
-                  <tbody>
-                    {(data?.movimientos || []).length ? data.movimientos.map((item) => (
-                      <tr key={item.id}>
-                        <td>{formatDateTime(item.fecha)}</td>
-                        <td>{MOVIMIENTO_LABELS[item.tipo] || item.tipo}</td>
-                        <td>{item.productoNombre || '-'}</td>
-                        <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
-                        <td>{item.montoTotal ? formatCurrency(item.montoTotal) : '-'}</td>
-                        <td>{item.detalleLogistico || item.motivo || '-'}</td>
-                        <td>{item.usuarioEmail || '-'}</td>
-                      </tr>
-                    )) : <tr><td colSpan="7" className="text-center text-slate-400">Sin movimientos en el rango filtrado.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <ReportesVentasTable items={data?.ventas || []} />
+          <ReportesMovimientosTable items={data?.movimientos || []} />
         </>
       )}
     </div>

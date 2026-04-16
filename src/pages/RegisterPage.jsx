@@ -66,33 +66,45 @@ export default function RegisterPage() {
         </button>
       </div>
 
-      <div className="auth-grid">
-        <section className="auth-hero">
+      <div className="auth-grid lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="auth-hero md:block">
           <div className="space-y-6">
-            <span className="auth-brand">Alta inicial</span>
+            <span className="auth-brand">Cuenta principal</span>
             <div className="space-y-4">
-              <h1 className="text-3xl font-semibold leading-tight text-white md:text-5xl">
-                Creá el usuario owner del corralón y asociá su cuenta desde el inicio.
+              <h1 className="text-3xl font-semibold leading-tight app-title-text md:text-5xl">
+                Creá el usuario principal del corralón en un solo paso.
               </h1>
-              <p className="max-w-2xl text-sm text-slate-300 md:text-base">
-                Este alta deja registrado el usuario con su email, contraseña y cuenta. Después el ingreso queda separado.
+              <p className="max-w-2xl text-sm md:text-base app-soft-text">
+                El sistema crea el usuario, vincula la cuenta y deja listo el acceso inicial para empezar a trabajar.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="auth-kpi"><div className="text-xs uppercase tracking-[0.14em] text-slate-400">Usuario</div><div className="mt-2 text-lg font-semibold text-white">Owner inicial</div><div className="mt-1 text-sm text-slate-300">Queda listo para administrar la cuenta.</div></div>
-            <div className="auth-kpi"><div className="text-xs uppercase tracking-[0.14em] text-slate-400">Cuenta</div><div className="mt-2 text-lg font-semibold text-white">ID + nombre comercial</div><div className="mt-1 text-sm text-slate-300">Se guardan junto al perfil del usuario.</div></div>
-            <div className="auth-kpi"><div className="text-xs uppercase tracking-[0.14em] text-slate-400">Seguridad</div><div className="mt-2 text-lg font-semibold text-white">Contraseña real</div><div className="mt-1 text-sm text-slate-300">Ya no depende solo de localStorage.</div></div>
+            <div className="auth-kpi">
+              <div className="app-eyebrow">Usuario</div>
+              <div className="mt-2 text-lg font-semibold app-title-text">Administrador principal</div>
+              <div className="mt-1 text-sm app-soft-text">Queda listo para operar y gestionar la cuenta.</div>
+            </div>
+            <div className="auth-kpi">
+              <div className="app-eyebrow">Cuenta</div>
+              <div className="mt-2 text-lg font-semibold app-title-text">Nueva o existente</div>
+              <div className="mt-1 text-sm app-soft-text">Si la cuenta coincide, se vincula sin abrir permisos inseguros.</div>
+            </div>
+            <div className="auth-kpi">
+              <div className="app-eyebrow">Puesta en marcha</div>
+              <div className="mt-2 text-lg font-semibold app-title-text">Lista para empezar</div>
+              <div className="mt-1 text-sm app-soft-text">Después solo queda cargar datos iniciales si el corralón está vacío.</div>
+            </div>
           </div>
         </section>
 
         <section className="auth-card">
           <div className="space-y-2">
-            <div className="text-sm font-medium uppercase tracking-[0.14em] text-slate-400">Registro</div>
-            <h2 className="text-2xl font-semibold text-white md:text-3xl">Crear usuario</h2>
-            <p className="text-sm text-slate-300">
-              Registrá el usuario inicial del corralón. Después va a poder ingresar desde la pantalla de login.
+            <div className="app-eyebrow">Registro</div>
+            <h2 className="text-2xl font-semibold app-title-text md:text-3xl">Crear cuenta principal</h2>
+            <p className="text-sm app-soft-text">
+              Usalo para el alta inicial del corralón o para vincular una cuenta que todavía no tenga usuario principal.
             </p>
           </div>
 
@@ -100,7 +112,7 @@ export default function RegisterPage() {
 
           <form className="mt-6 space-y-4 md:space-y-5" onSubmit={handleSubmit}>
             <label className="w-full form-control">
-              <span className="field-label">ID del corralón / cuenta</span>
+              <span className="field-label">ID del corralón</span>
               <input
                 className="h-12 input input-bordered"
                 name="cuentaId"
@@ -125,7 +137,7 @@ export default function RegisterPage() {
             </label>
 
             <label className="w-full form-control">
-              <span className="field-label">Nombre</span>
+              <span className="field-label">Nombre del responsable</span>
               <input
                 className="h-12 input input-bordered"
                 name="name"
@@ -177,12 +189,19 @@ export default function RegisterPage() {
               />
             </label>
 
+            <div className="auth-note-card">
+              <div className="text-sm font-semibold app-title-text">Consejo</div>
+              <p className="mt-1 text-sm app-soft-text">
+                Elegí un email que realmente vaya a administrar el corralón. Después podés sumar más usuarios desde la cuenta principal.
+              </p>
+            </div>
+
             <button type="submit" className="w-full h-12 text-base btn btn-primary" disabled={saving || isInitializing}>
-              {saving || isInitializing ? 'Creando...' : 'Crear usuario'}
+              {saving || isInitializing ? 'Creando...' : 'Crear cuenta principal'}
             </button>
           </form>
 
-          <div className="pt-5 mt-6 border-t border-base-300/70 text-sm text-slate-300">
+          <div className="pt-5 mt-6 border-t border-base-300/70 text-sm app-soft-text">
             ¿Ya tenés usuario?{' '}
             <Link to="/login" className="font-medium link link-hover text-primary">
               Ir al login

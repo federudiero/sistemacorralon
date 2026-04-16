@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userEmail() {
+      return signedIn() && request.auth.token.email != null
+        ? request.auth.token.email
+        : '';
+    }
+
+    function userProfileExists(uid) {
+      return exists(/databases/$(database)/documents/aridos_usuarios/$(uid));
+    }
+
+    function userProfileDoc(uid) {
+      return get(/databases/$(database)/documents/aridos_usuarios/$(uid));
+    }
+
+    function cuentaExists(cuentaId) {
+      return exists(/databases/$(database)/documents/cuentas/$(cuentaId));
+    }
+
+    function cuentaDoc(cuentaId) {
+      return get(/databases/$(database)/documents/cuentas/$(cuentaId));
+    }
+
+    function membershipExists(cuentaId, uid) {
+      return exists(/databases/$(database)/documents/cuentas/$(cuentaId)/usuarios/$(uid));
+    }
+
+    function membershipDoc(cuentaId, uid) {
+      return get(/databases/$(database)/documents/cuentas/$(cuentaId)/usuarios/$(uid));
+    }
+
+    function isOwnProfile(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isCuentaOwner(cuentaId) {
+      return signedIn()
+        && cuentaExists(cuentaId)
+        && cuentaDoc(cuentaId).data.ownerUid == request.auth.uid;
+    }
+
+    function isCuentaMember(cuentaId) {
+      return signedIn()
+        && membershipExists(cuentaId, request.auth.uid)
+        && membershipDoc(cuentaId, request.auth.uid).data.active == true;
+    }
+
+    function isProfileCuentaOwner(cuentaId) {
+      return signedIn()
+        && userProfileExists(request.auth.uid)
+        && userProfileDoc(request.auth.uid).data.cuentaId == cuentaId
+        && userProfileDoc(request.auth.uid).data.role == 'owner'
+        && userProfileDoc(request.auth.uid).data.active == true;
+    }
+
+    function isProfileCuentaAdmin(cuentaId) {
+      return signedIn()
+        && userProfileExists(request.auth.uid)
+        && userProfileDoc(request.auth.uid).data.cuentaId == cuentaId
+        && userProfileDoc(request.auth.uid).data.role in ['owner', 'admin_full', 'admin']
+        && userProfileDoc(request.auth.uid).data.active == true;
+    }
+
+    function canAccessCuenta(cuentaId) {
+      return isCuentaOwner(cuentaId)
+        || isCuentaMember(cuentaId)
+        || isProfileCuentaOwner(cuentaId)
+        || isProfileCuentaAdmin(cuentaId);
+    }
+
+    function isBootstrapCuentaCreate(cuentaId) {
+      return signedIn()
+        && !cuentaExists(cuentaId)
+        && request.resource.data.cuentaId == cuentaId
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerEmail == userEmail();
+    }
+
+    function isBootstrapCuentaAdopt(cuentaId) {
+      return signedIn()
+        && cuentaExists(cuentaId)
+        && (
+          !('ownerUid' in cuentaDoc(cuentaId).data)
+          || cuentaDoc(cuentaId).data.ownerUid == ''
+        )
+        && cuentaDoc(cuentaId).data.ownerEmail == userEmail()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerEmail == userEmail();
+    }
+
+    function canWriteConfig(cuentaId) {
+      return isCuentaOwner(cuentaId)
+        || isProfileCuentaOwner(cuentaId)
+        || (
+          membershipExists(cuentaId, request.auth.uid)
+          && membershipDoc(cuentaId, request.auth.uid).data.role in ['owner', 'admin_full']
+        );
+    }
+
+    match /aridos_usuarios/{uid} {
+      allow read: if isOwnProfile(uid);
+      allow create: if isOwnProfile(uid)
+        && request.resource.data.email == userEmail();
+      allow update: if isOwnProfile(uid)
+        && request.resource.data.email == userEmail();
+      allow delete: if false;
+    }
+
+    match /cuentas/{cuentaId} {
+      allow read: if canAccessCuenta(cuentaId);
+      allow create: if isBootstrapCuentaCreate(cuentaId);
+      allow update: if canWriteConfig(cuentaId) || isBootstrapCuentaAdopt(cuentaId);
+      allow delete: if false;
+
+      match /config/{docId} {
+        allow read: if canAccessCuenta(cuentaId);
+        allow create, update: if canWriteConfig(cuentaId);
+        allow delete: if false;
+      }
+
+      match /usuarios/{uid} {
+        allow read: if canAccessCuenta(cuentaId);
+
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.email == userEmail()
+          && (
+            isCuentaOwner(cuentaId)
+            || canWriteConfig(cuentaId)
+            || isProfileCuentaOwner(cuentaId)
+          );
+
+        allow update: if canWriteConfig(cuentaId)
+          || (
+            request.auth.uid == uid
+            && request.resource.data.email == userEmail()
+          );
+
+        allow delete: if canWriteConfig(cuentaId);
+      }
+
+      match /{document=**} {
+        allow read, write: if canAccessCuenta(cuentaId);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -20,18 +20,21 @@ export default function AppLayout() {
   }, [mobileSidebarOpen]);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell app-shell-mobile-first">
       <Topbar
         onOpenMenu={() => setMobileSidebarOpen(true)}
         onCloseMenu={() => setMobileSidebarOpen(false)}
         mobileSidebarOpen={mobileSidebarOpen}
       />
 
-      <main className="app-container app-mobile-safe">
+      <main className="app-container app-mobile-safe app-main-shell">
         <div className="app-grid">
           <Sidebar open={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-          <section className="min-w-0 pb-3 lg:pb-0">
-            <Outlet />
+
+          <section className="min-w-0 app-main-column">
+            <div className="app-main-inner">
+              <Outlet />
+            </div>
           </section>
         </div>
       </main>

@@ -37,6 +37,24 @@ export function ThemeProvider({ children }) {
     }
   }, [mode]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const handleChange = (event) => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) return;
+      } catch {
+        // ignore storage failure
+      }
+      setMode(event.matches ? 'light' : 'dark');
+    };
+
+    mediaQuery.addEventListener?.('change', handleChange);
+    return () => mediaQuery.removeEventListener?.('change', handleChange);
+  }, []);
+
   const value = useMemo(
     () => ({
       mode,
