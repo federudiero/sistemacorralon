@@ -5,8 +5,8 @@ export default function ReportesFilters({ filters, setFilters, productos = [], o
     <div className="page-section mb-4">
       <div className="page-section-body space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Filtros de reportes</h2>
-          <p className="mt-1 text-sm text-slate-300">Consultá ventas y movimientos por rango de fechas, producto y forma de pago.</p>
+          <h2 className="text-lg font-semibold app-title-text">Filtros de reportes</h2>
+          <p className="mt-1 text-sm app-soft-text">Consultá ventas y movimientos por rango de fechas, producto y forma de pago.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">

@@ -1,13 +1,21 @@
+import AppSelect from './AppSelect';
+
 export default function EntitySearchSelect({ label, items = [], value = '', onChange, disabled = false }) {
+  const options = items.map((item) => ({
+    value: item.id,
+    label: item.nombre || item.label || item.id,
+  }));
+
   return (
-    <label className="form-control w-full">
-      <span className="field-label">{label}</span>
-      <select className="select select-bordered h-12" value={value} onChange={(e) => onChange?.(e.target.value)} disabled={disabled}>
-        <option value="">Seleccionar...</option>
-        {items.map((item) => (
-          <option key={item.id} value={item.id}>{item.nombre || item.label || item.id}</option>
-        ))}
-      </select>
-    </label>
+    <AppSelect
+      label={label}
+      options={options}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder="Seleccionar..."
+      includeEmptyOption
+      emptyLabel="Seleccionar..."
+    />
   );
 }

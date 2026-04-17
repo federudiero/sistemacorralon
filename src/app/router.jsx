@@ -8,6 +8,7 @@ import RegisterPage from '../pages/RegisterPage';
 import SetupPage from '../pages/SetupPage';
 import HelpPage from '../pages/HelpPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import SetupRouteGuard from '../components/layout/SetupRouteGuard';
 
 import AridosDashboardPage from '../modules/aridos/pages/AridosDashboardPage';
 import ProductosPage from '../modules/aridos/pages/ProductosPage';
@@ -40,7 +41,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: 'setup', element: <SetupPage /> },
+      { path: 'setup', element: <SetupRouteGuard><SetupPage /></SetupRouteGuard> },
       { path: 'ayuda', element: <HelpPage /> },
       { path: 'aridos', element: guard(AridosDashboardPage, ARIDOS_SECTIONS.DASHBOARD) },
       { path: 'aridos/agenda', element: guard(AgendaVentasPage, ARIDOS_SECTIONS.DASHBOARD) },

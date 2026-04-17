@@ -32,6 +32,7 @@ function normalizePayload(payload = {}) {
     detalleLogistico: String(payload.detalleLogistico || '').trim(),
     remitoNumero: String(payload.remitoNumero || '').trim(),
     observaciones: String(payload.observaciones || '').trim(),
+    estado: 'confirmado',
   };
 }
 
@@ -87,6 +88,72 @@ export async function createIngresoCamion(cuentaId, payload, userEmail) {
       referenciaId: ingresoDoc.id,
       motivo: data.remitoNumero ? `Remito ${data.remitoNumero}` : 'Reposición',
       detalleLogistico: data.detalleLogistico || data.observaciones || '',
+      usuarioEmail: userEmail || null,
+      createdAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function anularIngresoCamion(cuentaId, ingresoId, motivo, userEmail) {
+  const ingresoRef = doc(db, `cuentas/${cuentaId}/ingresosCamion/${ingresoId}`);
+  const movimientosRef = collection(db, `cuentas/${cuentaId}/movimientosStock`);
+
+  await runTransaction(db, async (tx) => {
+    const ingresoSnap = await tx.get(ingresoRef);
+    if (!ingresoSnap.exists()) throw new Error('La reposición ya no existe.');
+
+    const ingreso = ingresoSnap.data();
+    if (ingreso.estado === 'anulado') {
+      throw new Error('La reposición ya estaba anulada.');
+    }
+
+    const cierreRef = docRef(cuentaId, 'cierresCaja', ingreso.fechaStr);
+    const cierreSnap = await tx.get(cierreRef);
+    if (cierreSnap.exists()) {
+      throw new Error(`El día ${ingreso.fechaStr} ya está cerrado. No se puede anular la reposición.`);
+    }
+
+    const productoRef = doc(db, `cuentas/${cuentaId}/productos/${ingreso.productoId}`);
+    const productoSnap = await tx.get(productoRef);
+    if (!productoSnap.exists()) throw new Error('Producto inexistente.');
+
+    const producto = productoSnap.data();
+    const stockActual = Number(producto.stockActual ?? producto.stockTotalM3 ?? 0);
+    const nuevoStock = stockActual - Number(ingreso.cantidad || 0);
+    if (nuevoStock < 0) {
+      throw new Error('No se puede anular la reposición porque el stock actual quedaría negativo.');
+    }
+
+    tx.update(ingresoRef, {
+      estado: 'anulado',
+      anuladaAt: serverTimestamp(),
+      anuladaBy: userEmail || null,
+      motivoAnulacion: String(motivo || 'Anulación manual de reposición').trim(),
+      updatedAt: serverTimestamp(),
+    });
+
+    tx.update(productoRef, {
+      stockActual: nuevoStock,
+      stockTotalM3: nuevoStock,
+      updatedAt: serverTimestamp(),
+      updatedBy: userEmail || null,
+    });
+
+    const movDoc = doc(movimientosRef);
+    tx.set(movDoc, {
+      fecha: new Date(),
+      fechaStr: ingreso.fechaStr,
+      tipo: MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO,
+      productoId: ingreso.productoId,
+      productoNombre: ingreso.productoNombre || producto.nombre || '',
+      unidadStock: ingreso.unidadStock || producto.unidadStock || producto.unidad || 'm3',
+      pesoBolsaKg: ingreso.pesoBolsaKg || producto.pesoBolsaKg || null,
+      cantidad: -Math.abs(Number(ingreso.cantidad || 0)),
+      montoTotal: Number(ingreso.costoTotal || 0),
+      referenciaTipo: 'ingreso_anulado',
+      referenciaId: ingresoId,
+      motivo: String(motivo || 'Anulación manual de reposición').trim(),
+      detalleLogistico: ingreso.remitoNumero ? `Reverso remito ${ingreso.remitoNumero}` : 'Reverso de reposición',
       usuarioEmail: userEmail || null,
       createdAt: serverTimestamp(),
     });

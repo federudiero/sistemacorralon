@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
@@ -106,8 +107,6 @@ function waitForAuthenticatedUser(timeoutMs = 10000) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readStoredUser);
   const [isInitializing, setIsInitializing] = useState(true);
-
-  // UID del usuario recién creado mientras el backend arma el perfil
   const bootstrapUidRef = useRef(null);
 
   useEffect(() => {
@@ -141,8 +140,6 @@ export function AuthProvider({ children }) {
         const profile = await fetchUserProfile(firebaseUser.uid);
 
         if (!profile) {
-          // Durante el alta inicial todavía no existe el perfil porque lo crea Functions.
-          // En ese caso NO cerramos sesión.
           if (bootstrapUidRef.current && bootstrapUidRef.current === firebaseUser.uid) {
             setIsInitializing(false);
             return;
@@ -192,8 +189,6 @@ export function AuthProvider({ children }) {
 
       const credentials = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       createdUser = credentials.user;
-
-      // Marcamos que este UID está en bootstrap para que el listener no lo desloguee.
       bootstrapUidRef.current = createdUser.uid;
 
       if (normalizedName) {
@@ -274,6 +269,17 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function resetPassword(email) {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) throw new Error('Ingresá un email válido.');
+
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+    } catch (error) {
+      throw new Error(getFriendlyAuthError(error));
+    }
+  }
+
   async function logout() {
     bootstrapUidRef.current = null;
     await signOut(auth);
@@ -288,6 +294,7 @@ export function AuthProvider({ children }) {
       isInitializing,
       register,
       login,
+      resetPassword,
       logout,
     }),
     [user, isInitializing],

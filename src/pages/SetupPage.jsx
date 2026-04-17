@@ -35,9 +35,9 @@ export default function SetupPage() {
     setMessage('');
     try {
       await seedAccessConfig(cuentaId, user?.email, cuentaNombre, user?.name);
-      setMessage('Acceso actualizado correctamente. Si el estado no cambia al instante, recargá la pantalla.');
+      setMessage('La cuenta quedó verificada correctamente. Si el estado no cambia al instante, recargá la pantalla.');
     } catch (err) {
-      setError(err?.message || 'No se pudo actualizar el acceso de la cuenta.');
+      setError(err?.message || 'No se pudo verificar el acceso de la cuenta.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function SetupPage() {
     setMessage('');
     try {
       await seedSampleData(cuentaId, user?.email);
-      setMessage('Datos iniciales cargados correctamente. Ya podés empezar a trabajar con productos, clientes y ventas.');
+      setMessage('Los datos de ejemplo se cargaron correctamente. Ya podés recorrer el circuito completo del sistema.');
     } catch (err) {
       setError(err?.message || 'No se pudieron cargar los datos iniciales.');
     } finally {
@@ -77,10 +77,10 @@ export default function SetupPage() {
       <div className="page-section">
         <div className="page-section-body space-y-6">
           <div className="space-y-2">
-            <div className="app-eyebrow">Puesta en marcha</div>
-            <h1 className="page-title">Dejar el sistema listo para operar</h1>
+            <div className="app-eyebrow">Configuración inicial</div>
+            <h1 className="page-title">Preparar la cuenta para empezar</h1>
             <p className="page-subtitle">
-              Desde acá verificás el acceso de la cuenta y, si todavía está vacía, cargás una base mínima de trabajo.
+              Desde acá confirmás que la cuenta quedó lista y, si todavía está vacía, cargás una base de ejemplo para recorrer el sistema.
             </p>
           </div>
 
@@ -92,14 +92,14 @@ export default function SetupPage() {
                   ? 'Verificando acceso...'
                   : ready
                     ? 'La cuenta ya está lista para empezar.'
-                    : 'Todavía falta confirmar el acceso operativo.'}
+                    : 'Todavía falta confirmar el acceso de la cuenta.'}
               </div>
               <p className="mt-2 text-sm app-soft-text">
                 {security.loading
                   ? 'Estamos revisando el perfil y los permisos del usuario actual.'
                   : ready
-                    ? 'Podés pasar directo a productos, reposición, ventas y reportes.'
-                    : 'Usá “Actualizar acceso” una sola vez si el usuario entró bien pero la cuenta todavía figura sin permisos.'}
+                    ? 'Ya podés pasar directo a productos, reposición, ventas, agenda y reportes.'
+                    : 'Usá “Verificar cuenta” una sola vez si el usuario entró bien pero la cuenta todavía figura sin permisos.'}
               </p>
             </div>
             <span className="app-chip">{security.loading ? 'Verificando' : formatRoleLabel(security.role)}</span>
@@ -133,21 +133,21 @@ export default function SetupPage() {
             <div className="page-section">
               <div className="page-section-body space-y-4">
                 <div>
-                  <div className="text-sm font-semibold app-title-text">Actualizar acceso</div>
+                  <div className="text-sm font-semibold app-title-text">Verificar cuenta</div>
                   <p className="mt-1 text-sm app-soft-text">
-                    Revalida la vinculación del usuario principal con la cuenta y actualiza la configuración mínima de acceso.
+                    Confirma la vinculación del usuario principal con la cuenta y actualiza el acceso básico si hace falta.
                   </p>
                 </div>
                 <ul className="app-bullet-list">
-                  <li>Úsalo solo si entrás al sistema pero alguna pantalla sigue figurando sin acceso.</li>
-                  <li>No borra datos ni modifica ventas, stock o clientes.</li>
+                  <li>Usalo solo si entrás al sistema pero alguna pantalla sigue figurando sin acceso.</li>
+                  <li>No borra datos ni modifica ventas, stock, clientes o productos.</li>
                 </ul>
                 <button
                   className="btn btn-primary h-11 w-full"
                   onClick={handleRepairAccess}
                   disabled={loading || security.loading || !user?.email || !cuentaId}
                 >
-                  Actualizar acceso
+                  Verificar cuenta
                 </button>
               </div>
             </div>
@@ -155,9 +155,9 @@ export default function SetupPage() {
             <div className="page-section">
               <div className="page-section-body space-y-4">
                 <div>
-                  <div className="text-sm font-semibold app-title-text">Cargar datos iniciales</div>
+                  <div className="text-sm font-semibold app-title-text">Cargar datos de ejemplo</div>
                   <p className="mt-1 text-sm app-soft-text">
-                    Agrega una base simple para empezar: productos de ejemplo, un cliente y un proveedor.
+                    Carga una base simple para demo o pruebas: productos, un cliente y un proveedor de ejemplo.
                   </p>
                 </div>
                 <ul className="app-bullet-list">
@@ -169,7 +169,7 @@ export default function SetupPage() {
                   onClick={handleSeedData}
                   disabled={loading || security.loading || !security.hasAccess || !user?.email || !cuentaId}
                 >
-                  Cargar base inicial
+                  Cargar datos de ejemplo
                 </button>
               </div>
             </div>

@@ -1,7 +1,17 @@
 import { useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
 import useVentasAgenda from '../hooks/useVentasAgenda';
-import { formatCurrency, formatDateOnly, formatEntregaDisplay, formatQuantity, toInputDate } from '../utils/formatters';
+import { updateVentaEntregaEstado } from '../services/ventas.service';
+import { VENTA_ENTREGA_ESTADOS } from '../utils/constants';
+import {
+  formatCurrency,
+  formatDateOnly,
+  formatEntregaDisplay,
+  formatEntregaEstado,
+  formatQuantity,
+  toInputDate,
+} from '../utils/formatters';
+import EstadoBadge from '../components/shared/EstadoBadge';
 
 function buildMonthDate(baseDate, deltaMonths = 0) {
   return new Date(baseDate.getFullYear(), baseDate.getMonth() + deltaMonths, 1);
@@ -31,38 +41,82 @@ function buildCalendarCells(monthDate) {
   });
 }
 
-function DayCard({ date, active, inMonth, count, amount, onClick, isToday }) {
+function DayCard({ date, active, inMonth, count, onClick, isToday }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-[68px] rounded-2xl border p-2 text-left transition md:min-h-[92px] md:p-3 ${
-        active
-          ? 'border-primary bg-primary/10 shadow-sm'
-          : 'border-base-300/70 bg-base-100 hover:border-primary/40'
-      } ${inMonth ? '' : 'opacity-45'}`}
+      className={`calendar-day-card ${active ? 'is-active' : ''} ${!inMonth ? 'is-outside' : ''}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-sm font-semibold ${active ? 'text-primary' : 'text-base-content'}`}>
-          {date.getDate()}
+      <div className="calendar-day-card__header">
+        <span className={`calendar-day-card__date ${active ? 'is-active' : ''}`}>{date.getDate()}</span>
+        {isToday ? <span className="calendar-day-card__today">Hoy</span> : null}
+      </div>
+
+      <div className="calendar-day-card__summary">
+        <span className={`calendar-day-card__dot ${count > 0 ? 'is-active' : ''}`} />
+        <span className={`calendar-day-card__metric ${count > 0 ? 'has-sales' : 'is-empty'}`}>
+          {count > 0 ? `${count} venta${count === 1 ? '' : 's'}` : 'Libre'}
         </span>
-        {isToday ? <span className="badge badge-outline badge-sm">Hoy</span> : null}
       </div>
-
-      <div className="mt-2 flex min-h-[20px] items-center gap-2 md:mt-3 md:min-h-[24px]">
-        {count > 0 ? <span className="h-2.5 w-2.5 rounded-full bg-primary" /> : <span className="h-2.5 w-2.5 rounded-full bg-base-300" />}
-        <span className="text-xs text-base-content/70">{count > 0 ? `${count} venta${count === 1 ? '' : 's'}` : 'Sin ventas'}</span>
-      </div>
-
-      {count > 0 ? <div className="mt-2 text-sm font-medium text-base-content">{formatCurrency(amount)}</div> : null}
     </button>
   );
 }
 
-export default function AgendaVentasPage({ cuentaId }) {
+function AgendaVentaCard({ item, onSetEntrega, processing = false }) {
+  const canChangeEntrega = item.estado !== 'anulada' && item.tipoEntrega === 'envio';
+
+  return (
+    <div className="agenda-sale-card">
+      <div className="agenda-sale-card__header">
+        <div className="min-w-0">
+          <div className="agenda-sale-card__title">{item.clienteNombre || 'Cliente'}</div>
+          <div className="agenda-sale-card__subtitle">{item.productoNombre || '-'}</div>
+        </div>
+        <div className="agenda-sale-card__aside">
+          <div className="agenda-sale-card__total">{formatCurrency(item.total)}</div>
+          <EstadoBadge value={item.entregaEstado} />
+        </div>
+      </div>
+
+      <div className="agenda-sale-card__details">
+        <div><b>Cantidad:</b> {formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</div>
+        <div><b>Entrega:</b> {formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</div>
+        <div><b>Dirección:</b> {item.detalleEntrega || item.direccion || '-'}</div>
+        <div><b>Estado:</b> {formatEntregaEstado(item.entregaEstado)}</div>
+      </div>
+
+      {canChangeEntrega ? (
+        <div className="agenda-sale-card__actions">
+          <button
+            className={`btn btn-sm ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA ? 'btn-success' : 'btn-outline'}`}
+            disabled={processing}
+            onClick={() => onSetEntrega?.(item, VENTA_ENTREGA_ESTADOS.ENTREGADA)}
+          >
+            Entregada
+          </button>
+          <button
+            className={`btn btn-sm ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA ? 'btn-error' : 'btn-outline'}`}
+            disabled={processing}
+            onClick={() => onSetEntrega?.(item, VENTA_ENTREGA_ESTADOS.NO_ENTREGADA)}
+          >
+            No entregada
+          </button>
+        </div>
+      ) : (
+        <div className="agenda-sale-card__note">
+          {item.tipoEntrega === 'retiro' ? 'Las ventas retiradas se toman como entregadas automáticamente.' : 'No disponible.'}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
   const today = useMemo(() => new Date(), []);
   const [monthCursor, setMonthCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => toInputDate(today));
+  const [processing, setProcessing] = useState(false);
 
   const monthStart = useMemo(() => new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1), [monthCursor]);
   const monthEnd = useMemo(() => new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0), [monthCursor]);
@@ -98,8 +152,18 @@ export default function AgendaVentasPage({ cuentaId }) {
 
   const selectedSummary = salesByDate[selectedDate] || { count: 0, amount: 0 };
 
+  async function handleEntrega(item, entregaEstado) {
+    if (!item?.id) return;
+    setProcessing(true);
+    try {
+      await updateVentaEntregaEstado(cuentaId, item.id, entregaEstado, currentUserEmail);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
   const actions = (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="agenda-toolbar">
       <button className="btn h-12" onClick={() => {
         const next = buildMonthDate(monthCursor, -1);
         setMonthCursor(next);
@@ -107,9 +171,7 @@ export default function AgendaVentasPage({ cuentaId }) {
       }}>
         Mes anterior
       </button>
-      <div className="min-w-[170px] rounded-2xl border border-base-300/70 bg-base-100 px-4 py-3 text-center text-sm font-medium text-base-content capitalize">
-        {getMonthLabel(monthCursor)}
-      </div>
+      <div className="agenda-toolbar__month">{getMonthLabel(monthCursor)}</div>
       <button className="btn h-12" onClick={() => {
         const next = buildMonthDate(monthCursor, 1);
         setMonthCursor(next);
@@ -134,7 +196,7 @@ export default function AgendaVentasPage({ cuentaId }) {
     <div className="space-y-4">
       <PageHeader
         title="Agenda de ventas"
-        subtitle="Calendario mensual para ver qué días tienen ventas cargadas y consultar el detalle por fecha."
+        subtitle="Calendario mensual para ver qué días tienen ventas cargadas y marcar si ya se entregaron o no."
         actions={actions}
       />
 
@@ -143,7 +205,7 @@ export default function AgendaVentasPage({ cuentaId }) {
       <div className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
         <div className="page-section">
           <div className="page-section-body space-y-4">
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">
+            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/60 sm:text-xs">
               {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
                 <div key={day} className="py-1">{day}</div>
               ))}
@@ -152,7 +214,7 @@ export default function AgendaVentasPage({ cuentaId }) {
             {loading ? (
               <div className="flex justify-center py-12"><span className="loading loading-spinner loading-lg" /></div>
             ) : (
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-2 sm:gap-3">
                 {calendarCells.map((date) => {
                   const key = buildDateKey(date);
                   const dayData = salesByDate[key] || { count: 0, amount: 0 };
@@ -163,7 +225,6 @@ export default function AgendaVentasPage({ cuentaId }) {
                       active={selectedDate === key}
                       inMonth={date.getMonth() === monthCursor.getMonth()}
                       count={dayData.count}
-                      amount={dayData.amount}
                       isToday={key === toInputDate(today)}
                       onClick={() => setSelectedDate(key)}
                     />
@@ -176,11 +237,13 @@ export default function AgendaVentasPage({ cuentaId }) {
 
         <div className="page-section">
           <div className="page-section-body space-y-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/60">Fecha seleccionada</div>
-              <div className="mt-2 text-xl font-semibold text-base-content">{formatDateOnly(`${selectedDate}T12:00:00`)}</div>
-              <div className="mt-1 text-sm text-base-content/70">
-                {selectedSummary.count} venta{selectedSummary.count === 1 ? '' : 's'} • {formatCurrency(selectedSummary.amount)}
+            <div className="agenda-summary-card">
+              <div className="agenda-summary-card__eyebrow">Fecha seleccionada</div>
+              <div className="agenda-summary-card__date">{formatDateOnly(`${selectedDate}T12:00:00`)}</div>
+              <div className="agenda-summary-card__meta">
+                <span>{selectedSummary.count} venta{selectedSummary.count === 1 ? '' : 's'}</span>
+                <span className="agenda-summary-card__bullet">•</span>
+                <span>{formatCurrency(selectedSummary.amount)}</span>
               </div>
             </div>
 
@@ -201,35 +264,18 @@ export default function AgendaVentasPage({ cuentaId }) {
               />
             </label>
 
-            <div className="rounded-2xl border border-base-300/70 bg-base-200/40 p-4 text-sm text-base-content/70">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                <span>El punto indica que hay al menos una venta registrada ese día.</span>
+            <div className="agenda-note-card">
+              <div className="agenda-note-card__dot" />
+              <div>
+                En el calendario se muestra solo el movimiento básico del día para que en celular siga limpio. El detalle completo se ve al abrir la fecha.
               </div>
             </div>
 
             <div className="space-y-3">
               {selectedItems.length ? selectedItems.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-base-300/70 bg-base-100 p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold text-base-content">{item.clienteNombre || 'Cliente'}</div>
-                      <div className="text-sm text-base-content/70">{item.productoNombre || '-'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-base-content">{formatCurrency(item.total)}</div>
-                      <div className="text-xs text-base-content/60">{item.estado || '-'}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-2 text-sm text-base-content/75">
-                    <div><b>Cantidad:</b> {formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</div>
-                    <div><b>Entrega:</b> {formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</div>
-                    <div><b>Dirección:</b> {item.detalleEntrega || item.direccion || '-'}</div>
-                  </div>
-                </div>
+                <AgendaVentaCard key={item.id} item={item} onSetEntrega={handleEntrega} processing={processing} />
               )) : (
-                <div className="rounded-2xl border border-dashed border-base-300/70 bg-base-100 px-4 py-8 text-center text-sm text-base-content/60">
+                <div className="agenda-empty-state">
                   No hay ventas registradas para esta fecha.
                 </div>
               )}

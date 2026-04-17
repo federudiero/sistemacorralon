@@ -3,6 +3,7 @@ import { AJUSTE_TIPOS } from '../../utils/constants';
 import { createAjusteStock } from '../../services/ajustesStock.service';
 import { isCajaCerrada } from '../../services/cierreCaja.service';
 import EntitySearchSelect from '../shared/EntitySearchSelect';
+import AppSelect from '../shared/AppSelect';
 import NumericInputM3 from '../shared/NumericInputM3';
 import { describeProductoUnidad, toInputDate } from '../../utils/formatters';
 
@@ -77,8 +78,8 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
     <div className="page-section mb-4">
       <div className="page-section-body space-y-5">
         <div>
-          <h2 className="text-lg font-semibold text-white">Registrar ajuste</h2>
-          <p className="mt-1 text-sm text-slate-300">Podés dejar el ajuste en la fecha operativa correcta y mantener la trazabilidad del motivo.</p>
+          <h2 className="text-lg font-semibold app-title-text">Registrar ajuste</h2>
+          <p className="mt-1 text-sm app-soft-text">Podés dejar el ajuste en la fecha operativa correcta y mantener la trazabilidad del motivo.</p>
         </div>
 
         {cajaCerrada ? (
@@ -101,12 +102,13 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
 
           <EntitySearchSelect label="Producto" items={productos} value={form.productoId} onChange={(value) => setForm((p) => ({ ...p, productoId: value }))} disabled={blocked} />
 
-          <label className="form-control w-full">
-            <span className="field-label">Tipo</span>
-            <select className="select select-bordered h-12" value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))} disabled={blocked}>
-              {AJUSTE_TIPOS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
+          <AppSelect
+            label="Tipo"
+            options={AJUSTE_TIPOS}
+            value={form.tipo}
+            onChange={(nextValue) => setForm((p) => ({ ...p, tipo: nextValue }))}
+            disabled={blocked}
+          />
 
           <div>
             <span className="field-label">{quantityLabel}</span>

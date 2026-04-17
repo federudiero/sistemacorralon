@@ -1,6 +1,6 @@
 import { getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { fetchCollection, docRef } from './base';
-import { MOVIMIENTO_TIPOS } from '../utils/constants';
+import { MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS } from '../utils/constants';
 import { parseInputDate } from '../utils/formatters';
 
 function buildDayBounds(fechaStr) {
@@ -10,6 +10,12 @@ function buildDayBounds(fechaStr) {
   };
 }
 
+function shouldCountForClosure(item) {
+  if (item.estado === 'anulada') return false;
+  return item.entregaEstado !== VENTA_ENTREGA_ESTADOS.NO_ENTREGADA
+    && item.entregaEstado !== VENTA_ENTREGA_ESTADOS.PENDIENTE;
+}
+
 function buildSummary(ventas = []) {
   const base = {
     totalVentas: 0,
@@ -17,6 +23,11 @@ function buildSummary(ventas = []) {
     totalCostoVentas: 0,
     totalMargenBruto: 0,
     cantidadOperaciones: 0,
+    cantidadEntregadas: 0,
+    cantidadPendientes: 0,
+    cantidadNoEntregadas: 0,
+    totalPendienteEntrega: 0,
+    totalNoEntregado: 0,
     porMetodoPago: {},
     porProducto: {},
   };
@@ -29,11 +40,24 @@ function buildSummary(ventas = []) {
     const metodo = item.metodoPago || 'sin_definir';
     const producto = item.productoNombre || 'Sin producto';
 
+    if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA) {
+      base.cantidadNoEntregadas += 1;
+      base.totalNoEntregado += totalVenta;
+      return;
+    }
+
+    if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE) {
+      base.cantidadPendientes += 1;
+      base.totalPendienteEntrega += totalVenta;
+      return;
+    }
+
     base.totalVentas += totalVenta;
     base.totalEnvio += Number(item.envioMonto || 0);
     base.totalCostoVentas += costoSnapshot;
     base.totalMargenBruto += totalVenta - costoSnapshot;
     base.cantidadOperaciones += 1;
+    base.cantidadEntregadas += 1;
     base.porMetodoPago[metodo] = (base.porMetodoPago[metodo] || 0) + totalVenta;
     base.porProducto[producto] = (base.porProducto[producto] || 0) + totalVenta;
   });
@@ -65,9 +89,16 @@ export async function getResumenCierreCaja(cuentaId, fechaStr) {
     getDoc(docRef(cuentaId, 'cierresCaja', fechaStr)),
   ]);
 
+  const ventasEntregadas = ventas.filter(shouldCountForClosure);
+  const ventasPendientes = ventas.filter((item) => item.estado !== 'anulada' && item.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE);
+  const ventasNoEntregadas = ventas.filter((item) => item.estado !== 'anulada' && item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA);
+
   return {
     fechaStr,
     ventas,
+    ventasEntregadas,
+    ventasPendientes,
+    ventasNoEntregadas,
     movimientos,
     resumen: buildSummary(ventas),
     cierreExistente: cierreDoc.exists() ? { id: cierreDoc.id, ...cierreDoc.data() } : null,
@@ -82,7 +113,9 @@ export async function crearCierreCaja(cuentaId, fechaStr, userEmail) {
     {
       fechaStr,
       resumen: resumen.resumen,
-      ventasIds: resumen.ventas.map((item) => item.id),
+      ventasIds: resumen.ventasEntregadas.map((item) => item.id),
+      ventasPendientesIds: resumen.ventasPendientes.map((item) => item.id),
+      ventasNoEntregadasIds: resumen.ventasNoEntregadas.map((item) => item.id),
       movimientosIds: resumen.movimientos.map((item) => item.id),
       closedBy: userEmail || null,
       closedAt: serverTimestamp(),
@@ -118,6 +151,6 @@ export async function crearCierreCaja(cuentaId, fechaStr, userEmail) {
 export async function getUltimosCierresCaja(cuentaId) {
   return fetchCollection(cuentaId, 'cierresCaja', {
     orderBy: [{ field: 'fechaStr', direction: 'desc' }],
-    limit: 30,
+    limit: 90,
   });
 }

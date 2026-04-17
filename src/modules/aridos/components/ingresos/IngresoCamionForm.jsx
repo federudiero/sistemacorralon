@@ -100,8 +100,8 @@ export default function IngresoCamionForm({
     <div className="mb-4 page-section">
       <div className="space-y-5 page-section-body pb-28 md:pb-6">
         <div>
-          <h2 className="text-lg font-semibold text-white">Registrar reposición</h2>
-          <p className="mt-1 text-sm text-slate-300">
+          <h2 className="text-lg font-semibold app-title-text">Registrar reposición</h2>
+          <p className="mt-1 text-sm app-soft-text">
             Podés dejar registrada la reposición para la fecha operativa que corresponda.
           </p>
         </div>
@@ -153,9 +153,12 @@ export default function IngresoCamionForm({
             <span className="field-label">Costo unitario</span>
             <input
               type="number"
+              min="0"
+              step="0.01"
               className="h-12 input input-bordered"
               value={form.costoUnitario}
               onChange={(e) => setForm((prev) => ({ ...prev, costoUnitario: e.target.value }))}
+              placeholder="0.00"
               disabled={blocked}
             />
           </label>
@@ -166,51 +169,42 @@ export default function IngresoCamionForm({
               className="h-12 input input-bordered"
               value={form.remitoNumero}
               onChange={(e) => setForm((prev) => ({ ...prev, remitoNumero: e.target.value }))}
+              placeholder="Opcional"
               disabled={blocked}
             />
           </label>
+
+          <div className="hidden md:block app-inline-meta">
+            <div className="text-xs uppercase tracking-[0.14em] app-muted-text">Costo estimado</div>
+            <div className="mt-1 text-2xl font-semibold app-title-text">{formatCurrency(costoTotal)}</div>
+            <div className="mt-1 text-sm app-muted-text">
+              {producto?.nombre || 'Seleccioná un producto'}
+              {proveedor?.nombre ? ` · ${proveedor.nombre}` : ''}
+            </div>
+          </div>
 
           <label className="form-control form-grid-wide">
             <span className="field-label">Observaciones</span>
             <textarea
-              className="textarea textarea-bordered min-h-24"
+              className="min-h-28 textarea textarea-bordered"
               value={form.observaciones}
               onChange={(e) => setForm((prev) => ({ ...prev, observaciones: e.target.value }))}
               disabled={blocked}
-              placeholder="Opcional"
             />
           </label>
         </div>
 
-        {disabled ? (
-          <div className="alert alert-warning">Tu rol actual no puede registrar ingresos.</div>
-        ) : null}
-
-        {error ? <div className="alert alert-error">{error}</div> : null}
-
-        <div className="hidden items-center justify-between gap-4 md:flex">
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-[0.14em] text-slate-400">Costo estimado</div>
-            <div className="mt-1 text-2xl font-semibold text-white">{formatCurrency(costoTotal)}</div>
-            <div className="mt-1 text-sm text-slate-400">
-              Fecha {fechaOperativa} • {proveedor?.nombre || 'Sin proveedor seleccionado'}
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button className="px-6 btn btn-primary h-11" onClick={handleSubmit} disabled={blocked}>
-              {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar reposición'}
-            </button>
-          </div>
+        <div className="md:hidden app-inline-meta">
+          <div className="text-[11px] uppercase tracking-[0.18em] app-muted-text">Costo estimado</div>
+          <div className="text-xl font-semibold app-title-text">{formatCurrency(costoTotal)}</div>
+          <div className="mt-1 text-xs app-muted-text">Fecha {fechaOperativa}</div>
         </div>
 
-        <div className="btm-action-bar md:hidden">
-          <div className="text-left min-w-0">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Costo estimado</div>
-            <div className="text-xl font-semibold text-white">{formatCurrency(costoTotal)}</div>
-            <div className="mt-1 text-xs text-slate-400">Fecha {fechaOperativa}</div>
-          </div>
-          <button className="btn btn-primary flex-1 h-11" onClick={handleSubmit} disabled={blocked}>
+        {disabled ? <div className="alert alert-warning">Tu rol actual no puede registrar ingresos de stock.</div> : null}
+        {error ? <div className="alert alert-error">{error}</div> : null}
+
+        <div className="form-actions">
+          <button className="h-11 px-6 btn btn-primary" onClick={handleSubmit} disabled={blocked}>
             {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar reposición'}
           </button>
         </div>

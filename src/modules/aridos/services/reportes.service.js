@@ -1,4 +1,5 @@
 import { fetchCollection } from './base';
+import { VENTA_ENTREGA_ESTADOS } from '../utils/constants';
 import { parseInputDate } from '../utils/formatters';
 
 function groupSum(items, keyGetter, valueGetter) {
@@ -58,13 +59,26 @@ export async function getReportesAridos(cuentaId, filters = {}) {
 
     const costoSnapshot = Number(item.costoTotalSnapshot || 0);
     const totalVenta = Number(item.total || 0);
+    const margen = totalVenta - costoSnapshot;
 
     acc.totalVentas += totalVenta;
     acc.totalCostoVentas += costoSnapshot;
-    acc.totalMargenBruto += totalVenta - costoSnapshot;
+    acc.totalMargenBruto += margen;
     acc.totalCantidadVendida += Number(item.cantidad || 0);
     acc.totalEnvio += Number(item.envioMonto || 0);
     acc.cantidadVentas += 1;
+
+    if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA) {
+      acc.totalEntregado += totalVenta;
+      acc.cantidadEntregadas += 1;
+    } else if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA) {
+      acc.totalNoEntregado += totalVenta;
+      acc.cantidadNoEntregadas += 1;
+    } else {
+      acc.totalPendiente += totalVenta;
+      acc.cantidadPendientes += 1;
+    }
+
     return acc;
   }, {
     totalVentas: 0,
@@ -73,19 +87,37 @@ export async function getReportesAridos(cuentaId, filters = {}) {
     totalCantidadVendida: 0,
     totalEnvio: 0,
     cantidadVentas: 0,
+    totalEntregado: 0,
+    cantidadEntregadas: 0,
+    totalPendiente: 0,
+    cantidadPendientes: 0,
+    totalNoEntregado: 0,
+    cantidadNoEntregadas: 0,
   });
+
+  resumen.ticketPromedio = resumen.cantidadVentas ? resumen.totalVentas / resumen.cantidadVentas : 0;
+  resumen.margenPorcentaje = resumen.totalVentas ? (resumen.totalMargenBruto / resumen.totalVentas) * 100 : 0;
+
+  const deliveredSales = filteredVentas.filter((item) => item.estado !== 'anulada' && item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA);
+  const activeSales = filteredVentas.filter((item) => item.estado !== 'anulada');
 
   return {
     ventas: filteredVentas,
     movimientos: filteredMovimientos,
     resumen,
     stats: {
-      ventasPorProducto: groupSum(filteredVentas.filter((item) => item.estado !== 'anulada'), (item) => item.productoNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
-      margenPorProducto: groupSum(filteredVentas.filter((item) => item.estado !== 'anulada'), (item) => item.productoNombre, (item) => Number(item.total || 0) - Number(item.costoTotalSnapshot || 0)).sort((a, b) => b.value - a.value).slice(0, 10),
-      cantidadesPorProducto: groupSum(filteredVentas.filter((item) => item.estado !== 'anulada'), (item) => item.productoNombre, (item) => item.cantidad).sort((a, b) => b.value - a.value).slice(0, 10),
-      ventasPorPago: groupSum(filteredVentas.filter((item) => item.estado !== 'anulada'), (item) => item.metodoPago, (item) => item.total).sort((a, b) => b.value - a.value),
-      ventasPorCliente: groupSum(filteredVentas.filter((item) => item.estado !== 'anulada'), (item) => item.clienteNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
+      ventasPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
+      margenPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => Number(item.total || 0) - Number(item.costoTotalSnapshot || 0)).sort((a, b) => b.value - a.value).slice(0, 10),
+      cantidadesPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => item.cantidad).sort((a, b) => b.value - a.value).slice(0, 10),
+      ventasPorPago: groupSum(activeSales, (item) => item.metodoPago, (item) => item.total).sort((a, b) => b.value - a.value),
+      ventasPorCliente: groupSum(activeSales, (item) => item.clienteNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
       movimientosPorTipo: groupSum(filteredMovimientos, (item) => item.tipo, () => 1).sort((a, b) => b.value - a.value),
+      entregasPorEstado: [
+        { key: 'Entregadas', value: resumen.totalEntregado, count: resumen.cantidadEntregadas },
+        { key: 'Pendientes', value: resumen.totalPendiente, count: resumen.cantidadPendientes },
+        { key: 'No entregadas', value: resumen.totalNoEntregado, count: resumen.cantidadNoEntregadas },
+      ].filter((item) => item.value > 0 || item.count > 0),
+      facturacionEntregadaPorProducto: groupSum(deliveredSales, (item) => item.productoNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 5),
     },
   };
 }

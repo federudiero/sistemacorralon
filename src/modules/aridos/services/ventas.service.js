@@ -6,9 +6,15 @@ import {
   requirePositiveNumber,
   requireString,
 } from '../utils/validators';
-import { MOVIMIENTO_TIPOS, VENTA_ESTADOS } from '../utils/constants';
-import { buildDateStr, parseInputDate, formatVehiculoEntrega } from '../utils/formatters';
+import { MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS, VENTA_ESTADOS } from '../utils/constants';
+import { buildDateStr, parseInputDate } from '../utils/formatters';
 import { subscribeCollection, docRef } from './base';
+
+function getDefaultEntregaEstado(payload = {}) {
+  return payload.tipoEntrega === 'envio'
+    ? VENTA_ENTREGA_ESTADOS.PENDIENTE
+    : VENTA_ENTREGA_ESTADOS.ENTREGADA;
+}
 
 function normalizePayload(payload = {}) {
   requireString(payload.clienteNombre || payload.clienteId, 'cliente');
@@ -24,6 +30,7 @@ function normalizePayload(payload = {}) {
   const subtotal = Number(payload.cantidad) * Number(payload.precioUnitario || 0);
   const envioMonto = Number(payload.tipoEntrega === 'envio' ? payload.envioMonto || 0 : 0);
   const total = subtotal + envioMonto;
+  const entregaEstado = payload.entregaEstado || getDefaultEntregaEstado(payload);
 
   return {
     fecha,
@@ -47,6 +54,9 @@ function normalizePayload(payload = {}) {
     detalleEntrega: String(payload.detalleEntrega || '').trim(),
     observaciones: String(payload.observaciones || '').trim(),
     estado: VENTA_ESTADOS.CONFIRMADA,
+    entregaEstado,
+    entregaMarcadaAt: entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : new Date(),
+    entregaMarcadaBy: payload.tipoEntrega === 'envio' ? null : (payload.userEmail || null),
     remitoGenerado: false,
     remitoId: null,
   };
@@ -57,7 +67,7 @@ function getStockActual(producto) {
 }
 
 async function createVenta(cuentaId, payload, userEmail) {
-  const data = normalizePayload(payload);
+  const data = normalizePayload({ ...payload, userEmail });
 
   const productoRef = doc(db, `cuentas/${cuentaId}/productos/${data.productoId}`);
   const ventasRef = collection(db, `cuentas/${cuentaId}/ventas`);
@@ -88,6 +98,10 @@ async function createVenta(cuentaId, payload, userEmail) {
       precioListaSnapshot: Number(producto.precioVenta ?? data.precioUnitario ?? 0),
       createdAt: serverTimestamp(),
       createdBy: userEmail || null,
+      entregaMarcadaAt:
+        data.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : serverTimestamp(),
+      entregaMarcadaBy:
+        data.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : (userEmail || null),
     });
 
     tx.update(productoRef, {
@@ -113,13 +127,42 @@ async function createVenta(cuentaId, payload, userEmail) {
       costoTotalSnapshot,
       referenciaTipo: 'venta',
       referenciaId: ventaDoc.id,
-      motivo:
-        data.tipoEntrega === 'envio'
-          ? `Se lo llevamos${data.vehiculoEntrega ? ` · ${formatVehiculoEntrega(data.vehiculoEntrega)}` : ''}`
-          : 'Retira cliente',
+      motivo: data.tipoEntrega === 'envio' ? 'Se lo llevamos' : 'Retira cliente',
       detalleLogistico: data.detalleEntrega || data.observaciones || '',
       usuarioEmail: userEmail || null,
       createdAt: serverTimestamp(),
+    });
+  });
+}
+
+async function updateVentaEntregaEstado(cuentaId, ventaId, entregaEstado, userEmail) {
+  if (![VENTA_ENTREGA_ESTADOS.PENDIENTE, VENTA_ENTREGA_ESTADOS.ENTREGADA, VENTA_ENTREGA_ESTADOS.NO_ENTREGADA].includes(entregaEstado)) {
+    throw new Error('Estado de entrega inválido.');
+  }
+
+  const ventaRef = doc(db, `cuentas/${cuentaId}/ventas/${ventaId}`);
+
+  await runTransaction(db, async (tx) => {
+    const ventaSnap = await tx.get(ventaRef);
+    if (!ventaSnap.exists()) throw new Error('Venta inexistente.');
+
+    const venta = ventaSnap.data();
+    if (venta.estado === VENTA_ESTADOS.ANULADA) {
+      throw new Error('No se puede actualizar la entrega de una venta anulada.');
+    }
+
+    const cierreRef = docRef(cuentaId, 'cierresCaja', venta.fechaStr);
+    const cierreSnap = await tx.get(cierreRef);
+    if (cierreSnap.exists()) {
+      throw new Error(`El día ${venta.fechaStr} ya está cerrado. No se puede cambiar el estado de entrega.`);
+    }
+
+    tx.update(ventaRef, {
+      entregaEstado,
+      entregaMarcadaAt: serverTimestamp(),
+      entregaMarcadaBy: userEmail || null,
+      updatedAt: serverTimestamp(),
+      updatedBy: userEmail || null,
     });
   });
 }
@@ -214,6 +257,7 @@ function subscribeVentasAgenda(cuentaId, range = {}, callback) {
 
 export {
   createVenta,
+  updateVentaEntregaEstado,
   anularVenta,
   subscribeVentas,
   subscribeVentasAgenda,

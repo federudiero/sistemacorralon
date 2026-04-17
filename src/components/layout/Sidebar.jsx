@@ -65,15 +65,6 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                   </NavLink>
                 ))}
 
-                {!security.hasAccess ? (
-                  <NavLink
-                    to="/setup"
-                    onClick={onClose}
-                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                  >
-                    Preparación inicial
-                  </NavLink>
-                ) : null}
               </nav>
             </div>
           </div>

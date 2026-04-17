@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createVenta } from '../../services/ventas.service';
 import { isCajaCerrada } from '../../services/cierreCaja.service';
 import EntitySearchSelect from '../shared/EntitySearchSelect';
+import AppSelect from '../shared/AppSelect';
 import NumericInputM3 from '../shared/NumericInputM3';
 import {
   CLIENTE_GENERICO_NOMBRE,
@@ -143,12 +144,12 @@ export default function VentaForm({
 
   return (
     <div className="mb-4 page-section">
-      <div className="page-section-body space-y-5 pb-4 md:pb-6">
+      <div className="page-section-body space-y-5 pb-24 md:pb-6">
         <div className="space-y-2">
           <div className="app-eyebrow">Venta rápida</div>
           <h2 className="page-title !text-[1.45rem] md:!text-[1.8rem]">Registrar venta</h2>
           <p className="page-subtitle">
-            Cargá la fecha, elegí cliente y producto, definí si es retiro o envío y confirmá el total final.
+            Elegí fecha, cliente y producto. Si es envío, después vas a poder marcar si se entregó o no.
           </p>
         </div>
 
@@ -159,7 +160,7 @@ export default function VentaForm({
           </div>
           <div className="app-inline-meta">
             <span className="app-muted-text">Entrega</span>
-            <strong className="app-title-text">{isEnvio ? 'Envío a domicilio' : 'Retiro en corralón'}</strong>
+            <strong className="app-title-text">{isEnvio ? 'Se lo llevamos' : 'Retiro en corralón'}</strong>
           </div>
           <div className="app-inline-meta">
             <span className="app-muted-text">Total actual</span>
@@ -243,37 +244,21 @@ export default function VentaForm({
             />
           </label>
 
-          <label className="w-full form-control">
-            <span className="field-label">Método de pago</span>
-            <select
-              className="h-12 select select-bordered"
-              value={form.metodoPago}
-              onChange={(e) => setForm((prev) => ({ ...prev, metodoPago: e.target.value }))}
-              disabled={blocked}
-            >
-              {METODOS_PAGO.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <AppSelect
+            label="Método de pago"
+            options={METODOS_PAGO}
+            value={form.metodoPago}
+            onChange={(nextValue) => setForm((prev) => ({ ...prev, metodoPago: nextValue }))}
+            disabled={blocked}
+          />
 
-          <label className="w-full form-control">
-            <span className="field-label">Tipo de entrega</span>
-            <select
-              className="h-12 select select-bordered"
-              value={form.tipoEntrega}
-              onChange={(e) => updateEntrega(e.target.value)}
-              disabled={blocked}
-            >
-              {TIPOS_ENTREGA.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <AppSelect
+            label="Tipo de entrega"
+            options={TIPOS_ENTREGA}
+            value={form.tipoEntrega}
+            onChange={updateEntrega}
+            disabled={blocked}
+          />
 
           {isEnvio ? (
             <>
@@ -296,7 +281,7 @@ export default function VentaForm({
                   value={form.detalleEntrega}
                   onChange={(e) => setForm((prev) => ({ ...prev, detalleEntrega: e.target.value }))}
                   disabled={blocked}
-                  placeholder="Dirección, barrio o referencia útil para la entrega"
+                  placeholder="Ej: barrio, calle, altura, observación de entrega"
                 />
               </label>
             </>
@@ -314,47 +299,35 @@ export default function VentaForm({
           </label>
         </div>
 
-        {disabled ? (
-          <div className="alert alert-warning">Tu rol actual no puede registrar ventas nuevas.</div>
-        ) : null}
-
+        {disabled ? <div className="alert alert-warning">Tu rol actual no puede registrar ventas.</div> : null}
         {error ? <div className="alert alert-error">{error}</div> : null}
+
+        <div className="sales-submit-bar md:hidden">
+          <div className="sales-submit-bar__meta">
+            <div className="sales-submit-bar__label">Total a cobrar</div>
+            <div className="sales-submit-bar__value">{formatCurrency(totalFinal)}</div>
+            <div className="sales-submit-bar__hint">
+              {subtotal ? `Subtotal ${formatCurrency(subtotal)}${isEnvio ? ` + envío ${formatCurrency(envioMonto)}` : ' · retiro'}` : 'Completá producto, cantidad y precio'}
+            </div>
+          </div>
+          <button className="btn btn-primary sales-submit-bar__button" onClick={handleSubmit} disabled={blocked}>
+            {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
+          </button>
+        </div>
 
         <div className="hidden items-center justify-between gap-4 md:flex">
           <div className="min-w-0">
-            <div className="app-eyebrow">Total a cobrar</div>
-            <div className="mt-1 text-2xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
+            <div className="field-label !mb-1">Total a cobrar</div>
+            <div className="text-3xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
             <div className="mt-1 text-sm app-muted-text">
-              Subtotal {formatCurrency(subtotal)} {isEnvio ? `• Envío ${formatCurrency(envioMonto)}` : '• Retiro'}
+              {subtotal ? `Subtotal ${formatCurrency(subtotal)}${isEnvio ? ` + envío ${formatCurrency(envioMonto)}` : ' · retiro en corralón'}` : 'Completá el formulario para calcular el total'}
             </div>
           </div>
 
-          <div className="form-actions !border-t-0 !pt-0">
+          <div className="form-actions !border-0 !pt-0">
             <button className="btn btn-primary h-12 px-6" onClick={handleSubmit} disabled={blocked}>
               {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
             </button>
-          </div>
-        </div>
-
-        <div className="md:hidden">
-          <div className="mobile-summary-strip">
-            <div className="mobile-summary-strip-inner">
-              <div className="min-w-0">
-                <div className="app-eyebrow">Total a cobrar</div>
-                <div className="mt-1 text-xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
-                <div className="mt-1 text-xs app-muted-text">
-                  {isEnvio ? `Envío • ${formatCurrency(envioMonto)}` : 'Retiro'}
-                </div>
-              </div>
-
-              <button
-                className="btn btn-primary h-12 min-w-[148px] px-5"
-                onClick={handleSubmit}
-                disabled={blocked}
-              >
-                {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
