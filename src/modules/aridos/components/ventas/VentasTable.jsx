@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { VENTA_ENTREGA_ESTADOS } from '../../utils/constants';
 import {
   formatCurrency,
   formatDateTime,
@@ -9,29 +8,89 @@ import {
 } from '../../utils/formatters';
 import EstadoBadge from '../shared/EstadoBadge';
 import ListSearchInput from '../shared/ListSearchInput';
+import EntregaStateSelector from '../shared/EntregaStateSelector';
+import UiIconButton from '../shared/UiIconButton';
 
-function EntregaActions({ item, onSetEntrega, processing = false, compact = false }) {
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.6 12s3.55-6.25 9.4-6.25S21.4 12 21.4 12 17.85 18.25 12 18.25 2.6 12 2.6 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+function BanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M8.5 15.5 15.5 8.5" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3.8h6.2l4 4v10.3a2.1 2.1 0 0 1-2.1 2.1H8A2.1 2.1 0 0 1 5.9 18.1V5.9A2.1 2.1 0 0 1 8 3.8Z" />
+      <path d="M14.2 3.8v4h4" />
+      <path d="M8.8 12.2h6.5" />
+      <path d="M8.8 15.5h4.9" />
+    </svg>
+  );
+}
+
+function EntregaActions({ item, onSetEntrega, processing = false }) {
   if (!onSetEntrega || item.estado === 'anulada') return null;
-  const disabled = processing || item.tipoEntrega === 'retiro';
 
   return (
-    <div className={`venta-entrega-actions ${compact ? 'is-compact' : ''}`}>
-      <button
-        type="button"
-        className={`btn btn-xs ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA ? 'btn-success' : 'btn-outline'}`}
-        disabled={disabled}
-        onClick={() => onSetEntrega(item, VENTA_ENTREGA_ESTADOS.ENTREGADA)}
-      >
-        Entregada
-      </button>
-      <button
-        type="button"
-        className={`btn btn-xs ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA ? 'btn-error' : 'btn-outline'}`}
-        disabled={disabled}
-        onClick={() => onSetEntrega(item, VENTA_ENTREGA_ESTADOS.NO_ENTREGADA)}
-      >
-        No entregada
-      </button>
+    <EntregaStateSelector
+      value={item.entregaEstado}
+      disabled={processing}
+      size="sm"
+      className="venta-state-stack"
+      onChange={(nextValue) => onSetEntrega(item, nextValue)}
+    />
+  );
+}
+
+function ActionButtons({
+  item,
+  onView,
+  onAnular,
+  onGenerarRemito,
+  canAnnul,
+  canGenerateRemito,
+}) {
+  return (
+    <div className="venta-action-stack">
+      <UiIconButton
+        size="sm"
+        label="Ver"
+        tone="neutral"
+        icon={<EyeIcon />}
+        onClick={() => onView?.(item)}
+      />
+
+      {item.estado !== 'anulada' && canAnnul ? (
+        <UiIconButton
+          size="sm"
+          label="Anular"
+          tone="danger"
+          icon={<BanIcon />}
+          onClick={() => onAnular?.(item)}
+        />
+      ) : null}
+
+      {item.estado === 'confirmada' && !item.remitoGenerado && canGenerateRemito ? (
+        <UiIconButton
+          size="sm"
+          label="Remito"
+          tone="secondary"
+          icon={<FileIcon />}
+          onClick={() => onGenerarRemito?.(item)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -67,11 +126,15 @@ function VentaCard({
         </div>
         <div>
           <span className="mobile-data-label">Cantidad</span>
-          <span className="mobile-data-value">{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</span>
+          <span className="mobile-data-value">
+            {formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}
+          </span>
         </div>
         <div>
           <span className="mobile-data-label">Entrega</span>
-          <span className="mobile-data-value">{formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</span>
+          <span className="mobile-data-value">
+            {formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}
+          </span>
         </div>
         <div>
           <span className="mobile-data-label">Estado entrega</span>
@@ -87,25 +150,18 @@ function VentaCard({
         </div>
       </div>
 
-      {canUpdateEntrega ? <EntregaActions item={item} onSetEntrega={onSetEntrega} processing={processing} compact /> : null}
+      {canUpdateEntrega ? (
+        <EntregaActions item={item} onSetEntrega={onSetEntrega} processing={processing} />
+      ) : null}
 
-      <div className="mobile-card-actions mobile-card-actions-spaced">
-        <button className="btn btn-sm btn-outline flex-1 min-w-[88px]" onClick={() => onView?.(item)}>
-          Ver
-        </button>
-
-        {item.estado !== 'anulada' && canAnnul ? (
-          <button className="btn btn-sm btn-error btn-outline flex-1 min-w-[88px]" onClick={() => onAnular?.(item)}>
-            Anular
-          </button>
-        ) : null}
-
-        {item.estado === 'confirmada' && !item.remitoGenerado && canGenerateRemito ? (
-          <button className="btn btn-sm btn-secondary btn-outline flex-1 min-w-[88px]" onClick={() => onGenerarRemito?.(item)}>
-            Remito
-          </button>
-        ) : null}
-      </div>
+      <ActionButtons
+        item={item}
+        onView={onView}
+        onAnular={onAnular}
+        onGenerarRemito={onGenerarRemito}
+        canAnnul={canAnnul}
+        canGenerateRemito={canGenerateRemito}
+      />
     </div>
   );
 }
@@ -113,6 +169,7 @@ function VentaCard({
 function matchesSearch(item, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
+
   return [
     item.clienteNombre,
     item.productoNombre,
@@ -144,10 +201,12 @@ export default function VentasTable({
   return (
     <div className="page-section">
       <div className="page-section-body ventas-table-body">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Ventas registradas</h3>
-            <p className="mt-1 text-sm app-muted-text">Podés buscar, abrir el detalle y marcar si la venta se entregó o no.</p>
+            <p className="mt-1 text-sm app-muted-text">
+              Podés buscar, abrir el detalle y marcar si la venta quedó pendiente, entregada o no entregada.
+            </p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>
@@ -198,31 +257,48 @@ export default function VentasTable({
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{formatDateTime(item.fecha)}</td>
-                  <td>{item.clienteNombre}</td>
-                  <td>{item.productoNombre}</td>
-                  <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
-                  <td>{formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</td>
-                  <td>
-                    <div className="flex flex-col gap-2">
-                      <EstadoBadge value={item.entregaEstado} />
-                      {canUpdateEntrega ? <EntregaActions item={item} onSetEntrega={onSetEntrega} processing={processing} /> : null}
-                    </div>
-                  </td>
-                  <td>{formatCurrency(item.envioMonto || 0)}</td>
-                  <td>{formatCurrency(item.total)}</td>
-                  <td><EstadoBadge value={item.estado} /></td>
-                  <td className="flex flex-wrap gap-2">
-                    <button className="btn btn-xs btn-outline" onClick={() => onView?.(item)}>Ver</button>
-                    {item.estado !== 'anulada' && canAnnul ? <button className="btn btn-xs btn-error btn-outline" onClick={() => onAnular?.(item)}>Anular</button> : null}
-                    {item.estado === 'confirmada' && !item.remitoGenerado && canGenerateRemito ? <button className="btn btn-xs btn-secondary btn-outline" onClick={() => onGenerarRemito?.(item)}>Remito</button> : null}
-                  </td>
-                </tr>
-              )) : (
+              {filteredItems.length ? (
+                filteredItems.map((item) => (
+                  <tr key={item.id}>
+                    <td>{formatDateTime(item.fecha)}</td>
+                    <td>{item.clienteNombre}</td>
+                    <td>{item.productoNombre}</td>
+                    <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
+                    <td>{formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</td>
+                    <td>
+                      <div className="flex flex-col gap-2">
+                        <EstadoBadge value={item.entregaEstado} />
+                        {canUpdateEntrega ? (
+                          <EntregaActions
+                            item={item}
+                            onSetEntrega={onSetEntrega}
+                            processing={processing}
+                          />
+                        ) : null}
+                      </div>
+                    </td>
+                    <td>{formatCurrency(item.envioMonto || 0)}</td>
+                    <td>{formatCurrency(item.total)}</td>
+                    <td>
+                      <EstadoBadge value={item.estado} />
+                    </td>
+                    <td>
+                      <ActionButtons
+                        item={item}
+                        onView={onView}
+                        onAnular={onAnular}
+                        onGenerarRemito={onGenerarRemito}
+                        canAnnul={canAnnul}
+                        canGenerateRemito={canGenerateRemito}
+                      />
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan="10" className="text-center app-muted-text">No hay ventas que coincidan con la búsqueda.</td>
+                  <td colSpan="10" className="text-center app-muted-text">
+                    No hay ventas que coincidan con la búsqueda.
+                  </td>
                 </tr>
               )}
             </tbody>

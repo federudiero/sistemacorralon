@@ -11,12 +11,16 @@ service cloud.firestore {
         : '';
     }
 
-    function userProfile(uid) {
-      return get(/databases/$(database)/documents/aridos_usuarios/$(uid));
+    function cuentaExists(cuentaId) {
+      return exists(/databases/$(database)/documents/cuentas/$(cuentaId));
     }
 
     function cuentaDoc(cuentaId) {
       return get(/databases/$(database)/documents/cuentas/$(cuentaId));
+    }
+
+    function membershipExists(cuentaId, uid) {
+      return exists(/databases/$(database)/documents/cuentas/$(cuentaId)/usuarios/$(uid));
     }
 
     function membershipDoc(cuentaId, uid) {
@@ -29,78 +33,305 @@ service cloud.firestore {
 
     function isCuentaOwner(cuentaId) {
       return signedIn()
-        && cuentaDoc(cuentaId).exists()
+        && cuentaExists(cuentaId)
         && cuentaDoc(cuentaId).data.ownerUid == request.auth.uid;
     }
 
     function isCuentaMember(cuentaId) {
       return signedIn()
-        && membershipDoc(cuentaId, request.auth.uid).exists()
+        && membershipExists(cuentaId, request.auth.uid)
         && membershipDoc(cuentaId, request.auth.uid).data.active == true;
+    }
+
+    function memberRole(cuentaId) {
+      return isCuentaMember(cuentaId)
+        ? membershipDoc(cuentaId, request.auth.uid).data.role
+        : '';
+    }
+
+    function hasCuentaRole(cuentaId, roles) {
+      return isCuentaOwner(cuentaId)
+        || (isCuentaMember(cuentaId) && memberRole(cuentaId) in roles);
     }
 
     function canAccessCuenta(cuentaId) {
       return isCuentaOwner(cuentaId) || isCuentaMember(cuentaId);
     }
 
+    function canManageConfig(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full']);
+    }
+
+    function canManageMembers(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full']);
+    }
+
+    function canReadGeneral(cuentaId) {
+      return canAccessCuenta(cuentaId);
+    }
+
+    function canReadBackoffice(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador', 'solo_lectura']);
+    }
+
+    function canWriteCatalog(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canWriteClientes(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador', 'vendedor']);
+    }
+
+    function canWriteVentas(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador', 'vendedor']);
+    }
+
+    function canAnnulVentas(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canWriteIngresos(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canWriteAjustes(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canAnnulAjustes(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canWriteRemitos(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canWriteCierre(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function canAnnulCierre(cuentaId) {
+      return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador']);
+    }
+
+    function onlyChanges(allowedKeys) {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(allowedKeys);
+    }
+
     function isBootstrapCuentaCreate(cuentaId) {
       return signedIn()
-        && !cuentaDoc(cuentaId).exists()
+        && !cuentaExists(cuentaId)
         && request.resource.data.cuentaId == cuentaId
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.ownerEmail == userEmail();
     }
 
-
     function isBootstrapCuentaAdopt(cuentaId) {
       return signedIn()
-        && cuentaDoc(cuentaId).exists()
-        && (!('ownerUid' in cuentaDoc(cuentaId).data) || cuentaDoc(cuentaId).data.ownerUid == '')
+        && cuentaExists(cuentaId)
+        && (
+          !('ownerUid' in cuentaDoc(cuentaId).data)
+          || cuentaDoc(cuentaId).data.ownerUid == ''
+        )
         && cuentaDoc(cuentaId).data.ownerEmail == userEmail()
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.ownerEmail == userEmail();
     }
 
-    function canWriteConfig(cuentaId) {
-      return isCuentaOwner(cuentaId)
-        || (membershipDoc(cuentaId, request.auth.uid).exists()
-          && membershipDoc(cuentaId, request.auth.uid).data.role in ['owner', 'admin_full']);
+    function validMemberRole(role) {
+      return role in ['owner', 'admin_full', 'admin', 'operador', 'vendedor', 'solo_lectura'];
+    }
+
+    function validManagedMemberDoc(cuentaId, uid) {
+      return request.resource.data.uid == uid
+        && request.resource.data.cuentaId == cuentaId
+        && request.resource.data.email is string
+        && request.resource.data.name is string
+        && request.resource.data.cuentaNombre is string
+        && request.resource.data.active is bool
+        && request.resource.data.owner is bool
+        && validMemberRole(request.resource.data.role);
+    }
+
+    function validOwnProfileUpdate(uid) {
+      return isOwnProfile(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.cuentaId == resource.data.cuentaId
+        && request.resource.data.cuentaNombre == resource.data.cuentaNombre
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.active == resource.data.active
+        && onlyChanges(['name', 'updatedAt']);
+    }
+
+    function validOwnMembershipUpdate(cuentaId, uid) {
+      return signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.cuentaId == resource.data.cuentaId
+        && request.resource.data.cuentaNombre == resource.data.cuentaNombre
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.owner == resource.data.owner
+        && request.resource.data.active == resource.data.active
+        && onlyChanges(['name', 'updatedAt']);
+    }
+
+    function validVentaEntregaUpdate(cuentaId) {
+      return canWriteVentas(cuentaId)
+        && onlyChanges(['entregaEstado', 'entregaMarcadaAt', 'entregaMarcadaBy', 'updatedAt', 'updatedBy']);
+    }
+
+    function validVentaAnnulUpdate(cuentaId) {
+      return canAnnulVentas(cuentaId)
+        && resource.data.estado != 'anulada'
+        && request.resource.data.estado == 'anulada'
+        && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
+    }
+
+    function validVentaRemitoLinkUpdate(cuentaId) {
+      return canWriteRemitos(cuentaId)
+        && request.resource.data.remitoGenerado == true
+        && request.resource.data.remitoId is string
+        && onlyChanges(['remitoGenerado', 'remitoId', 'updatedAt']);
+    }
+
+    function validIngresoAnnulUpdate(cuentaId) {
+      return canWriteIngresos(cuentaId)
+        && resource.data.estado != 'anulado'
+        && request.resource.data.estado == 'anulado'
+        && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
+    }
+
+    function validAjusteReversalUpdate(cuentaId) {
+      return canAnnulAjustes(cuentaId)
+        && resource.data.revertido != true
+        && request.resource.data.revertido == true
+        && request.resource.data.reversionAjusteId is string
+        && onlyChanges(['revertido', 'revertidoAt', 'revertidoBy', 'motivoReversion', 'reversionAjusteId', 'updatedAt']);
+    }
+
+    function validRemitoEstadoUpdate(cuentaId) {
+      return canWriteRemitos(cuentaId)
+        && onlyChanges(['estado', 'updatedAt', 'updatedBy']);
+    }
+
+    function canCreateMovimiento(cuentaId) {
+      return (
+        request.resource.data.tipo == 'venta'
+          && canWriteVentas(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'devolucion'
+          && canAnnulVentas(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'ingreso_reposicion'
+          && canWriteIngresos(cuentaId)
+      ) || (
+        request.resource.data.tipo in ['ajuste_positivo', 'ajuste_negativo', 'merma']
+          && canWriteAjustes(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'cierre_caja'
+          && canWriteCierre(cuentaId)
+      );
     }
 
     match /aridos_usuarios/{uid} {
       allow read: if isOwnProfile(uid);
-      allow create: if isOwnProfile(uid)
-        && request.resource.data.email == userEmail();
-      allow update: if isOwnProfile(uid)
-        && request.resource.data.email == userEmail();
+      allow create: if false;
+      allow update: if validOwnProfileUpdate(uid);
       allow delete: if false;
     }
 
     match /cuentas/{cuentaId} {
       allow read: if canAccessCuenta(cuentaId);
       allow create: if isBootstrapCuentaCreate(cuentaId);
-      allow update: if canWriteConfig(cuentaId) || isBootstrapCuentaAdopt(cuentaId);
+      allow update: if canManageConfig(cuentaId) || isBootstrapCuentaAdopt(cuentaId);
       allow delete: if false;
 
       match /config/{docId} {
         allow read: if canAccessCuenta(cuentaId);
-        allow create, update: if canWriteConfig(cuentaId);
+        allow create, update: if canManageConfig(cuentaId);
         allow delete: if false;
       }
 
       match /usuarios/{uid} {
         allow read: if canAccessCuenta(cuentaId);
-        allow create: if signedIn()
-          && request.auth.uid == uid
-          && request.resource.data.email == userEmail()
-          && (isCuentaOwner(cuentaId) || canWriteConfig(cuentaId));
-        allow update: if canWriteConfig(cuentaId)
-          || (request.auth.uid == uid && request.resource.data.email == userEmail());
-        allow delete: if canWriteConfig(cuentaId);
+        allow create: if canManageMembers(cuentaId) && validManagedMemberDoc(cuentaId, uid);
+        allow update: if (canManageMembers(cuentaId) && validManagedMemberDoc(cuentaId, uid))
+          || validOwnMembershipUpdate(cuentaId, uid);
+        allow delete: if false;
+      }
+
+      match /productos/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create, update: if canWriteCatalog(cuentaId);
+        allow delete: if false;
+      }
+
+      match /bateas/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create, update: if canWriteCatalog(cuentaId);
+        allow delete: if false;
+      }
+
+      match /proveedores/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create, update: if canWriteCatalog(cuentaId);
+        allow delete: if false;
+      }
+
+      match /clientes/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create, update: if canWriteClientes(cuentaId);
+        allow delete: if false;
+      }
+
+      match /ventas/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create: if canWriteVentas(cuentaId);
+        allow update: if validVentaEntregaUpdate(cuentaId)
+          || validVentaAnnulUpdate(cuentaId)
+          || validVentaRemitoLinkUpdate(cuentaId);
+        allow delete: if false;
+      }
+
+      match /ingresosCamion/{docId} {
+        allow read: if canReadBackoffice(cuentaId);
+        allow create: if canWriteIngresos(cuentaId);
+        allow update: if validIngresoAnnulUpdate(cuentaId);
+        allow delete: if false;
+      }
+
+      match /ajustesStock/{docId} {
+        allow read: if canReadBackoffice(cuentaId);
+        allow create: if canWriteAjustes(cuentaId);
+        allow update: if validAjusteReversalUpdate(cuentaId);
+        allow delete: if false;
+      }
+
+      match /movimientosStock/{docId} {
+        allow read: if canReadBackoffice(cuentaId);
+        allow create: if canCreateMovimiento(cuentaId);
+        allow update: if false;
+        allow delete: if canAnnulCierre(cuentaId) && resource.data.tipo == 'cierre_caja';
+      }
+
+      match /remitos/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create: if canWriteRemitos(cuentaId);
+        allow update: if validRemitoEstadoUpdate(cuentaId);
+        allow delete: if false;
+      }
+
+      match /cierresCaja/{docId} {
+        allow read: if canReadBackoffice(cuentaId);
+        allow create: if canWriteCierre(cuentaId);
+        allow update: if false;
+        allow delete: if canAnnulCierre(cuentaId);
       }
 
       match /{document=**} {
-        allow read, write: if canAccessCuenta(cuentaId);
+        allow read, write: if false;
       }
     }
 

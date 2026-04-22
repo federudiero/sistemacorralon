@@ -11,12 +11,13 @@ function RemitoCard({ item, onChangeEstado, canEdit }) {
       <div className="mobile-data-card-header">
         <div className="min-w-0 flex-1">
           <div className="mobile-data-card-title truncate">{item.clienteNombre || 'Cliente'}</div>
-          <div className="mobile-data-card-subtitle">{formatDateTime(item.fecha)}</div>
+          <div className="mobile-data-card-subtitle">{formatDateTime(item.fecha)} • {item.numeroRemito || item.id}</div>
         </div>
         <RemitoEstadoBadge value={item.estado} />
       </div>
 
       <div className="mobile-data-grid">
+        <div><span className="mobile-data-label">Remito</span><span className="mobile-data-value">{item.numeroRemito || item.id}</span></div>
         <div><span className="mobile-data-label">Producto</span><span className="mobile-data-value">{item.productoNombre || '-'}</span></div>
         <div><span className="mobile-data-label">Cantidad</span><span className="mobile-data-value strong">{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</span></div>
         <div><span className="mobile-data-label">Vehículo</span><span className="mobile-data-value">{item.camion ? formatVehiculoEntrega(item.camion) : '-'}</span></div>
@@ -40,7 +41,7 @@ function RemitoCard({ item, onChangeEstado, canEdit }) {
 function matchesSearch(item, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return [item.clienteNombre, item.productoNombre, item.camion, item.chofer, item.estado].join(' ').toLowerCase().includes(q);
+  return [item.numeroRemito, item.id, item.clienteNombre, item.productoNombre, item.camion, item.chofer, item.estado].join(' ').toLowerCase().includes(q);
 }
 
 export default function RemitosTable({ items = [], onChangeEstado, canEdit = true }) {
@@ -53,12 +54,12 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Remitos operativos</h3>
-            <p className="mt-1 text-sm app-muted-text">Buscá remitos por cliente, producto, chofer o estado.</p>
+            <p className="mt-1 text-sm app-muted-text">Buscá remitos por número, cliente, producto, chofer o estado.</p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>
 
-        <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por cliente, producto, chofer o estado" count={filteredItems.length} className="mb-4" />
+        <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por número, cliente, producto, chofer o estado" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
           {filteredItems.length ? filteredItems.map((item) => <RemitoCard key={item.id} item={item} onChangeEstado={onChangeEstado} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay remitos para mostrar.</div>}
@@ -66,11 +67,12 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table table-zebra">
-            <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Vehículo</th><th>Chofer</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Remito</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Vehículo</th><th>Chofer</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {filteredItems.length ? filteredItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
+                  <td className="font-mono text-xs">{item.numeroRemito || item.id}</td>
                   <td>{item.clienteNombre || '-'}</td>
                   <td>{item.productoNombre || '-'}</td>
                   <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>
@@ -79,7 +81,7 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
                   <td><RemitoEstadoBadge value={item.estado} /></td>
                   <td>{canEdit ? <AppSelect options={Object.values(REMITO_ESTADOS).map((estado) => ({ value: estado, label: estado }))} value={item.estado} onChange={(nextValue) => onChangeEstado?.(item, nextValue)} size="xs" /> : <span className="text-xs opacity-60">Solo lectura</span>}</td>
                 </tr>
-              )) : <tr><td colSpan="8" className="text-center app-muted-text">No hay remitos para mostrar.</td></tr>}
+              )) : <tr><td colSpan="9" className="text-center app-muted-text">No hay remitos para mostrar.</td></tr>}
             </tbody>
           </table>
         </div>

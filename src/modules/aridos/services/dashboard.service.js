@@ -1,6 +1,7 @@
 import { fetchCollection } from './base';
-import { MOVIMIENTO_TIPOS } from '../utils/constants';
+import { MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS } from '../utils/constants';
 import { parseInputDate } from '../utils/formatters';
+import { getStockActual, getStockMinimo } from '../utils/stock';
 
 function sumBy(items, getter) {
   return items.reduce((acc, item) => acc + Number(getter(item) || 0), 0);
@@ -44,6 +45,14 @@ function aggregateByKey(items, keyGetter, valueGetter) {
   return Array.from(map.values());
 }
 
+function isActiveVenta(item) {
+  return item?.estado !== 'anulada';
+}
+
+function isDeliveredVenta(item) {
+  return isActiveVenta(item) && item?.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA;
+}
+
 export async function getDashboardAridos(cuentaId, filters = {}) {
   const fecha = filters.fecha || toDateStr();
   const { start: dayStart, end: dayEnd } = dayBounds(fecha);
@@ -85,25 +94,27 @@ export async function getDashboardAridos(cuentaId, filters = {}) {
     }),
   ]);
 
-  const ventasDiaConfirmadas = ventasDia.filter((item) => item.estado !== 'anulada');
-  const ventasMesConfirmadas = ventasMes.filter((item) => item.estado !== 'anulada');
+  const ventasDiaRegistradas = ventasDia.filter(isActiveVenta);
+  const ventasDiaEntregadas = ventasDiaRegistradas.filter(isDeliveredVenta);
+  const ventasMesRegistradas = ventasMes.filter(isActiveVenta);
+  const ventasMesEntregadas = ventasMesRegistradas.filter(isDeliveredVenta);
 
-  const stockCritico = productos.filter((p) => Number(p.stockActual || p.stockTotalM3 || 0) <= Number(p.stockMinimo || p.stockMinimoM3 || 0));
+  const stockCritico = productos.filter((p) => getStockActual(p) <= getStockMinimo(p));
   const productosActivos = productos.filter((p) => p.activo !== false);
-  const conStock = productosActivos.filter((item) => Number(item.stockActual || item.stockTotalM3 || 0) > 0).length;
+  const conStock = productosActivos.filter((item) => getStockActual(item) > 0).length;
 
-  const topProductosDia = aggregateByKey(ventasDiaConfirmadas, (item) => item.productoNombre, (item) => item.cantidad)
+  const topProductosDia = aggregateByKey(ventasDiaEntregadas, (item) => item.productoNombre, (item) => item.cantidad)
     .sort((a, b) => b.value - a.value)
     .slice(0, 5);
 
-  const ventasPorPagoDia = aggregateByKey(ventasDiaConfirmadas, (item) => item.metodoPago, (item) => item.total)
+  const ventasPorPagoDia = aggregateByKey(ventasDiaEntregadas, (item) => item.metodoPago, (item) => item.total)
     .sort((a, b) => b.value - a.value);
 
-  const ventasPorEntregaDia = aggregateByKey(ventasDiaConfirmadas, (item) => item.tipoEntrega, (item) => item.total);
-  const reposicionPorProductoDia = aggregateByKey(ingresosDia, (item) => item.productoNombre, (item) => item.cantidad)
+  const ventasPorEntregaDia = aggregateByKey(ventasDiaRegistradas, (item) => item.tipoEntrega, (item) => item.total);
+  const reposicionPorProductoDia = aggregateByKey(ingresosDia.filter((item) => item.estado !== 'anulado'), (item) => item.productoNombre, (item) => item.cantidad)
     .sort((a, b) => b.value - a.value);
 
-  const topProductosMes = aggregateByKey(ventasMesConfirmadas, (item) => item.productoNombre, (item) => item.total)
+  const topProductosMes = aggregateByKey(ventasMesEntregadas, (item) => item.productoNombre, (item) => item.total)
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
@@ -111,13 +122,17 @@ export async function getDashboardAridos(cuentaId, filters = {}) {
     fecha,
     productosCount: productos.length,
     productosActivos: productosActivos.length,
-    ventasHoyMonto: sumBy(ventasDiaConfirmadas, (item) => item.total),
-    ventasHoyCantidad: sumBy(ventasDiaConfirmadas, (item) => item.cantidad),
-    ventasHoyEnvio: sumBy(ventasDiaConfirmadas, (item) => item.envioMonto),
-    ventasHoyOperaciones: ventasDiaConfirmadas.length,
-    ingresosHoyCantidad: sumBy(ingresosDia, (item) => item.cantidad),
-    ingresosHoyOperaciones: ingresosDia.length,
-    ingresosHoyCosto: sumBy(ingresosDia, (item) => item.costoTotal),
+    ventasHoyMonto: sumBy(ventasDiaEntregadas, (item) => item.total),
+    ventasHoyCantidad: sumBy(ventasDiaEntregadas, (item) => item.cantidad),
+    ventasHoyEnvio: sumBy(ventasDiaEntregadas, (item) => item.envioMonto),
+    ventasHoyOperaciones: ventasDiaEntregadas.length,
+    ventasHoyRegistradasMonto: sumBy(ventasDiaRegistradas, (item) => item.total),
+    ventasHoyRegistradasOperaciones: ventasDiaRegistradas.length,
+    ventasHoyPendientesMonto: sumBy(ventasDiaRegistradas.filter((item) => item.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE), (item) => item.total),
+    ventasHoyNoEntregadasMonto: sumBy(ventasDiaRegistradas.filter((item) => item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA), (item) => item.total),
+    ingresosHoyCantidad: sumBy(ingresosDia.filter((item) => item.estado !== 'anulado'), (item) => item.cantidad),
+    ingresosHoyOperaciones: ingresosDia.filter((item) => item.estado !== 'anulado').length,
+    ingresosHoyCosto: sumBy(ingresosDia.filter((item) => item.estado !== 'anulado'), (item) => item.costoTotal),
     stockCritico,
     ultimosMovimientos,
     movimientosDia,
@@ -127,11 +142,13 @@ export async function getDashboardAridos(cuentaId, filters = {}) {
     ventasPorEntregaDia,
     topProductosDia,
     reposicionPorProductoDia,
-    ventasMesMonto: sumBy(ventasMesConfirmadas, (item) => item.total),
-    ventasMesOperaciones: ventasMesConfirmadas.length,
+    ventasMesMonto: sumBy(ventasMesEntregadas, (item) => item.total),
+    ventasMesOperaciones: ventasMesEntregadas.length,
+    ventasMesRegistradasMonto: sumBy(ventasMesRegistradas, (item) => item.total),
+    ventasMesRegistradasOperaciones: ventasMesRegistradas.length,
     topProductosMes,
     alertas: {
-      productosSinStock: productos.filter((item) => Number(item.stockActual || item.stockTotalM3 || 0) <= 0).length,
+      productosSinStock: productos.filter((item) => getStockActual(item) <= 0).length,
       movimientosAjusteDia: movimientosDia.filter((item) => [MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO, MOVIMIENTO_TIPOS.AJUSTE_POSITIVO, MOVIMIENTO_TIPOS.MERMA].includes(item.tipo)).length,
     },
   };

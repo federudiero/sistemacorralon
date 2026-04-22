@@ -1,5 +1,6 @@
 import { createDoc, getById, subscribeCollection, updateById } from './base';
 import { requireBolsaKg, requireNonNegativeNumber, requireString } from '../utils/validators';
+import { buildStockFields, buildStockMinFields } from '../utils/stock';
 
 function sanitizePayload(payload = {}) {
   requireString(payload.nombre, 'nombre');
@@ -14,6 +15,7 @@ function sanitizePayload(payload = {}) {
 
   const costoActual = Number(payload.costoActual ?? payload.costoPromedio ?? 0);
   const stockMinimo = Number(payload.stockMinimo ?? payload.stockMinimoM3 ?? 0);
+  const minFields = buildStockMinFields(unidadStock, stockMinimo);
 
   return {
     nombre: String(payload.nombre).trim(),
@@ -24,8 +26,7 @@ function sanitizePayload(payload = {}) {
     precioVenta: Number(payload.precioVenta || 0),
     costoActual,
     costoPromedio: costoActual,
-    stockMinimo,
-    stockMinimoM3: stockMinimo,
+    ...minFields,
     activo: payload.activo !== false,
   };
 }
@@ -35,8 +36,7 @@ export async function createProducto(cuentaId, payload, userEmail) {
   const stockActual = Number(payload.stockActual ?? payload.stockTotalM3 ?? 0);
   return createDoc(cuentaId, 'productos', {
     ...data,
-    stockActual,
-    stockTotalM3: stockActual,
+    ...buildStockFields(data.unidadStock, stockActual),
     createdBy: userEmail || null,
     updatedBy: userEmail || null,
   });

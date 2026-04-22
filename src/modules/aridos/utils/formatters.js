@@ -161,6 +161,9 @@ export function formatMovimientoTipo(tipo, referenciaTipo = '') {
   if (tipo === MOVIMIENTO_TIPOS.DEVOLUCION && referenciaTipo === 'venta_anulada') {
     return 'Anulación de venta';
   }
+  if (referenciaTipo === 'ajuste_revertido') {
+    return 'Reversión de ajuste';
+  }
 
   return MOVIMIENTO_LABELS[tipo] || tipo || '-';
 }
@@ -175,6 +178,8 @@ export function formatReferenciaMovimiento(referenciaTipo = '') {
       return 'reposición';
     case 'ajuste_stock':
       return 'ajuste';
+    case 'ajuste_revertido':
+      return 'reversión ajuste';
     case 'cierre_caja':
       return 'cierre';
     default:

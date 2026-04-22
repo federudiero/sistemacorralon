@@ -1,27 +1,28 @@
-import { doc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { collection, doc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase/firebase';
-import { REMITO_ESTADOS } from '../utils/constants';
+import { REMITO_ESTADOS, VENTA_ESTADOS } from '../utils/constants';
 import { subscribeCollection } from './base';
 
 export async function createRemitoDesdeVenta(cuentaId, ventaId, payload, userEmail) {
   const ventaRef = doc(db, `cuentas/${cuentaId}/ventas/${ventaId}`);
-  const remitoRef = doc(db, `cuentas/${cuentaId}/remitos/venta_${ventaId}`);
+  const remitosRef = collection(db, `cuentas/${cuentaId}/remitos`);
+  const remitoRef = doc(remitosRef);
 
   await runTransaction(db, async (tx) => {
-    const [ventaSnap, remitoSnap] = await Promise.all([
-      tx.get(ventaRef),
-      tx.get(remitoRef),
-    ]);
-
+    const ventaSnap = await tx.get(ventaRef);
     if (!ventaSnap.exists()) throw new Error('Venta inexistente.');
-    if (remitoSnap.exists()) throw new Error('La venta ya tiene remito.');
 
     const venta = ventaSnap.data();
+    if (venta.estado === VENTA_ESTADOS.ANULADA) {
+      throw new Error('No se puede generar remito para una venta anulada.');
+    }
+
     if (venta.remitoGenerado || venta.remitoId) {
       throw new Error('La venta ya tiene remito.');
     }
 
     tx.set(remitoRef, {
+      numeroRemito: remitoRef.id,
       fecha: new Date(),
       fechaStr: venta.fechaStr,
       ventaId,

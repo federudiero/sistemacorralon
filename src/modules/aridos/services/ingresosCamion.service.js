@@ -3,6 +3,7 @@ import { db } from '../../../firebase/firebase';
 import { requireNonNegativeNumber, requirePositiveNumber, requireString } from '../utils/validators';
 import { MOVIMIENTO_TIPOS } from '../utils/constants';
 import { buildDateStr, parseInputDate } from '../utils/formatters';
+import { buildStockFields, calculateWeightedAverageCost, getStockActual } from '../utils/stock';
 import { subscribeCollection, docRef } from './base';
 
 function normalizePayload(payload = {}) {
@@ -53,22 +54,35 @@ export async function createIngresoCamion(cuentaId, payload, userEmail) {
     if (!productoSnap.exists()) throw new Error('Producto inexistente.');
 
     const producto = productoSnap.data();
-    const stockActual = Number(producto.stockActual ?? producto.stockTotalM3 ?? 0);
+    const stockActual = getStockActual(producto);
     const ingresoDoc = doc(ingresosRef);
-    const nuevoCostoActual = Number(data.costoUnitario || producto.costoActual || producto.costoPromedio || 0);
+    const costoActualAnterior = Number(producto.costoActual ?? producto.costoPromedio ?? 0);
+    const costoPromedioAnterior = Number(producto.costoPromedio ?? producto.costoActual ?? 0);
+    const nuevoCostoActual = Number(data.costoUnitario || costoActualAnterior || 0);
+    const nuevoCostoPromedio = calculateWeightedAverageCost({
+      stockAnterior: stockActual,
+      costoPromedioAnterior,
+      cantidadIngresada: data.cantidad,
+      costoUnitarioIngresado: data.costoUnitario,
+    });
     const nuevoStock = stockActual + data.cantidad;
 
     tx.set(ingresoDoc, {
       ...data,
+      stockAnterior: stockActual,
+      stockPosterior: nuevoStock,
+      costoActualAnterior,
+      costoPromedioAnterior,
+      costoActualPosterior: nuevoCostoActual,
+      costoPromedioPosterior: nuevoCostoPromedio,
       createdAt: serverTimestamp(),
       createdBy: userEmail || null,
     });
 
     tx.update(productoRef, {
-      stockActual: nuevoStock,
-      stockTotalM3: nuevoStock,
+      ...buildStockFields(producto.unidadStock || producto.unidad || data.unidadStock, nuevoStock),
       costoActual: nuevoCostoActual,
-      costoPromedio: nuevoCostoActual,
+      costoPromedio: nuevoCostoPromedio,
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });
@@ -118,7 +132,7 @@ export async function anularIngresoCamion(cuentaId, ingresoId, motivo, userEmail
     if (!productoSnap.exists()) throw new Error('Producto inexistente.');
 
     const producto = productoSnap.data();
-    const stockActual = Number(producto.stockActual ?? producto.stockTotalM3 ?? 0);
+    const stockActual = getStockActual(producto);
     const nuevoStock = stockActual - Number(ingreso.cantidad || 0);
     if (nuevoStock < 0) {
       throw new Error('No se puede anular la reposición porque el stock actual quedaría negativo.');
@@ -133,8 +147,9 @@ export async function anularIngresoCamion(cuentaId, ingresoId, motivo, userEmail
     });
 
     tx.update(productoRef, {
-      stockActual: nuevoStock,
-      stockTotalM3: nuevoStock,
+      ...buildStockFields(producto.unidadStock || producto.unidad || ingreso.unidadStock, nuevoStock),
+      costoActual: Number(ingreso.costoActualAnterior ?? producto.costoActual ?? producto.costoPromedio ?? 0),
+      costoPromedio: Number(ingreso.costoPromedioAnterior ?? producto.costoPromedio ?? producto.costoActual ?? 0),
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });

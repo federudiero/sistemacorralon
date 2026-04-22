@@ -82,7 +82,7 @@ export function buildDefaultAridosPermissions(role) {
       ingresos: { read: true, write: true, adjust: false, annul: false, admin: false },
       ventas: { read: true, write: true, adjust: false, annul: true, admin: false },
       movimientos: { read: true, write: false, adjust: false, annul: false, admin: false },
-      ajustes: { read: true, write: false, adjust: true, annul: false, admin: false },
+      ajustes: { read: true, write: false, adjust: true, annul: true, admin: false },
       remitos: { read: true, write: true, adjust: false, annul: false, admin: false },
       reportes: { read: true, write: false, adjust: false, annul: false, admin: false },
       cierre_caja: { read: true, write: true, adjust: false, annul: false, admin: false },

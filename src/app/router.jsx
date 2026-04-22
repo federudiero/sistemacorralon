@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
       { path: 'setup', element: <SetupRouteGuard><SetupPage /></SetupRouteGuard> },
       { path: 'ayuda', element: <HelpPage /> },
       { path: 'aridos', element: guard(AridosDashboardPage, ARIDOS_SECTIONS.DASHBOARD) },
-      { path: 'aridos/agenda', element: guard(AgendaVentasPage, ARIDOS_SECTIONS.DASHBOARD) },
+      { path: 'aridos/agenda', element: guard(AgendaVentasPage, ARIDOS_SECTIONS.VENTAS) },
       { path: 'aridos/productos', element: guard(ProductosPage, ARIDOS_SECTIONS.PRODUCTOS) },
       { path: 'aridos/bateas', element: guard(BateasPage, ARIDOS_SECTIONS.BATEAS) },
       { path: 'aridos/proveedores', element: guard(ProveedoresPage, ARIDOS_SECTIONS.PROVEEDORES) },

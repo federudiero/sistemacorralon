@@ -25,6 +25,14 @@ function buildFechaWhere(from, to) {
   return where;
 }
 
+function isActiveVenta(item) {
+  return item?.estado !== 'anulada';
+}
+
+function isDeliveredVenta(item) {
+  return isActiveVenta(item) && item?.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA;
+}
+
 export async function getReportesAridos(cuentaId, filters = {}) {
   const { from, to } = buildRange(filters);
   const whereFecha = buildFechaWhere(from, to);
@@ -54,63 +62,71 @@ export async function getReportesAridos(cuentaId, filters = {}) {
     return true;
   });
 
-  const resumen = filteredVentas.reduce((acc, item) => {
-    if (item.estado === 'anulada') return acc;
+  const activeSales = filteredVentas.filter(isActiveVenta);
+  const deliveredSales = activeSales.filter(isDeliveredVenta);
+  const pendingSales = activeSales.filter((item) => item.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE);
+  const notDeliveredSales = activeSales.filter((item) => item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA);
 
-    const costoSnapshot = Number(item.costoTotalSnapshot || 0);
-    const totalVenta = Number(item.total || 0);
-    const margen = totalVenta - costoSnapshot;
-
-    acc.totalVentas += totalVenta;
-    acc.totalCostoVentas += costoSnapshot;
-    acc.totalMargenBruto += margen;
-    acc.totalCantidadVendida += Number(item.cantidad || 0);
-    acc.totalEnvio += Number(item.envioMonto || 0);
-    acc.cantidadVentas += 1;
-
-    if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA) {
-      acc.totalEntregado += totalVenta;
-      acc.cantidadEntregadas += 1;
-    } else if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA) {
-      acc.totalNoEntregado += totalVenta;
-      acc.cantidadNoEntregadas += 1;
-    } else {
-      acc.totalPendiente += totalVenta;
-      acc.cantidadPendientes += 1;
-    }
-
-    return acc;
-  }, {
+  const resumen = {
     totalVentas: 0,
     totalCostoVentas: 0,
     totalMargenBruto: 0,
     totalCantidadVendida: 0,
     totalEnvio: 0,
     cantidadVentas: 0,
+    totalVentasRegistradas: 0,
+    cantidadVentasRegistradas: 0,
     totalEntregado: 0,
     cantidadEntregadas: 0,
     totalPendiente: 0,
     cantidadPendientes: 0,
     totalNoEntregado: 0,
     cantidadNoEntregadas: 0,
+  };
+
+  activeSales.forEach((item) => {
+    resumen.totalVentasRegistradas += Number(item.total || 0);
+    resumen.cantidadVentasRegistradas += 1;
+  });
+
+  deliveredSales.forEach((item) => {
+    const costoSnapshot = Number(item.costoTotalSnapshot || 0);
+    const totalVenta = Number(item.total || 0);
+    const margen = totalVenta - costoSnapshot;
+
+    resumen.totalVentas += totalVenta;
+    resumen.totalCostoVentas += costoSnapshot;
+    resumen.totalMargenBruto += margen;
+    resumen.totalCantidadVendida += Number(item.cantidad || 0);
+    resumen.totalEnvio += Number(item.envioMonto || 0);
+    resumen.cantidadVentas += 1;
+    resumen.totalEntregado += totalVenta;
+    resumen.cantidadEntregadas += 1;
+  });
+
+  pendingSales.forEach((item) => {
+    resumen.totalPendiente += Number(item.total || 0);
+    resumen.cantidadPendientes += 1;
+  });
+
+  notDeliveredSales.forEach((item) => {
+    resumen.totalNoEntregado += Number(item.total || 0);
+    resumen.cantidadNoEntregadas += 1;
   });
 
   resumen.ticketPromedio = resumen.cantidadVentas ? resumen.totalVentas / resumen.cantidadVentas : 0;
   resumen.margenPorcentaje = resumen.totalVentas ? (resumen.totalMargenBruto / resumen.totalVentas) * 100 : 0;
-
-  const deliveredSales = filteredVentas.filter((item) => item.estado !== 'anulada' && item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA);
-  const activeSales = filteredVentas.filter((item) => item.estado !== 'anulada');
 
   return {
     ventas: filteredVentas,
     movimientos: filteredMovimientos,
     resumen,
     stats: {
-      ventasPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
-      margenPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => Number(item.total || 0) - Number(item.costoTotalSnapshot || 0)).sort((a, b) => b.value - a.value).slice(0, 10),
-      cantidadesPorProducto: groupSum(activeSales, (item) => item.productoNombre, (item) => item.cantidad).sort((a, b) => b.value - a.value).slice(0, 10),
-      ventasPorPago: groupSum(activeSales, (item) => item.metodoPago, (item) => item.total).sort((a, b) => b.value - a.value),
-      ventasPorCliente: groupSum(activeSales, (item) => item.clienteNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
+      ventasPorProducto: groupSum(deliveredSales, (item) => item.productoNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
+      margenPorProducto: groupSum(deliveredSales, (item) => item.productoNombre, (item) => Number(item.total || 0) - Number(item.costoTotalSnapshot || 0)).sort((a, b) => b.value - a.value).slice(0, 10),
+      cantidadesPorProducto: groupSum(deliveredSales, (item) => item.productoNombre, (item) => item.cantidad).sort((a, b) => b.value - a.value).slice(0, 10),
+      ventasPorPago: groupSum(deliveredSales, (item) => item.metodoPago, (item) => item.total).sort((a, b) => b.value - a.value),
+      ventasPorCliente: groupSum(deliveredSales, (item) => item.clienteNombre, (item) => item.total).sort((a, b) => b.value - a.value).slice(0, 10),
       movimientosPorTipo: groupSum(filteredMovimientos, (item) => item.tipo, () => 1).sort((a, b) => b.value - a.value),
       entregasPorEstado: [
         { key: 'Entregadas', value: resumen.totalEntregado, count: resumen.cantidadEntregadas },

@@ -8,12 +8,11 @@ import {
 } from '../utils/validators';
 import { MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS, VENTA_ESTADOS } from '../utils/constants';
 import { buildDateStr, parseInputDate } from '../utils/formatters';
+import { buildStockFields, getStockActual } from '../utils/stock';
 import { subscribeCollection, docRef } from './base';
 
-function getDefaultEntregaEstado(payload = {}) {
-  return payload.tipoEntrega === 'envio'
-    ? VENTA_ENTREGA_ESTADOS.PENDIENTE
-    : VENTA_ENTREGA_ESTADOS.ENTREGADA;
+function getDefaultEntregaEstado() {
+  return VENTA_ENTREGA_ESTADOS.PENDIENTE;
 }
 
 function normalizePayload(payload = {}) {
@@ -26,11 +25,12 @@ function normalizePayload(payload = {}) {
   const fecha = payload.fecha
     ? parseInputDate(payload.fecha, { baseTime: new Date() })
     : new Date();
+
   const fechaStr = buildDateStr(fecha);
   const subtotal = Number(payload.cantidad) * Number(payload.precioUnitario || 0);
   const envioMonto = Number(payload.tipoEntrega === 'envio' ? payload.envioMonto || 0 : 0);
   const total = subtotal + envioMonto;
-  const entregaEstado = payload.entregaEstado || getDefaultEntregaEstado(payload);
+  const entregaEstado = payload.entregaEstado || getDefaultEntregaEstado();
 
   return {
     fecha,
@@ -50,22 +50,18 @@ function normalizePayload(payload = {}) {
     total,
     tipoEntrega: payload.tipoEntrega || 'retiro',
     metodoPago: payload.metodoPago || 'efectivo',
-    vehiculoEntrega: payload.vehiculoEntrega || (payload.tipoEntrega === 'envio' ? 'envio' : 'retiro_cliente'),
+    vehiculoEntrega:
+      payload.vehiculoEntrega || (payload.tipoEntrega === 'envio' ? 'envio' : 'retiro_cliente'),
     detalleEntrega: String(payload.detalleEntrega || '').trim(),
     observaciones: String(payload.observaciones || '').trim(),
     estado: VENTA_ESTADOS.CONFIRMADA,
     entregaEstado,
-    entregaMarcadaAt: entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : new Date(),
-    entregaMarcadaBy: payload.tipoEntrega === 'envio' ? null : (payload.userEmail || null),
+    entregaMarcadaAt: null,
+    entregaMarcadaBy: null,
     remitoGenerado: false,
     remitoId: null,
   };
 }
-
-function getStockActual(producto) {
-  return Number(producto.stockActual ?? producto.stockTotalM3 ?? 0);
-}
-
 async function createVenta(cuentaId, payload, userEmail) {
   const data = normalizePayload({ ...payload, userEmail });
 
@@ -98,15 +94,12 @@ async function createVenta(cuentaId, payload, userEmail) {
       precioListaSnapshot: Number(producto.precioVenta ?? data.precioUnitario ?? 0),
       createdAt: serverTimestamp(),
       createdBy: userEmail || null,
-      entregaMarcadaAt:
-        data.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : serverTimestamp(),
-      entregaMarcadaBy:
-        data.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : (userEmail || null),
+      entregaMarcadaAt: null,
+      entregaMarcadaBy: null,
     });
 
     tx.update(productoRef, {
-      stockActual: stockActual - data.cantidad,
-      stockTotalM3: stockActual - data.cantidad,
+      ...buildStockFields(producto.unidadStock || producto.unidad || data.unidadStock, stockActual - data.cantidad),
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });
@@ -136,7 +129,13 @@ async function createVenta(cuentaId, payload, userEmail) {
 }
 
 async function updateVentaEntregaEstado(cuentaId, ventaId, entregaEstado, userEmail) {
-  if (![VENTA_ENTREGA_ESTADOS.PENDIENTE, VENTA_ENTREGA_ESTADOS.ENTREGADA, VENTA_ENTREGA_ESTADOS.NO_ENTREGADA].includes(entregaEstado)) {
+  if (
+    ![
+      VENTA_ENTREGA_ESTADOS.PENDIENTE,
+      VENTA_ENTREGA_ESTADOS.ENTREGADA,
+      VENTA_ENTREGA_ESTADOS.NO_ENTREGADA,
+    ].includes(entregaEstado)
+  ) {
     throw new Error('Estado de entrega inválido.');
   }
 
@@ -154,13 +153,21 @@ async function updateVentaEntregaEstado(cuentaId, ventaId, entregaEstado, userEm
     const cierreRef = docRef(cuentaId, 'cierresCaja', venta.fechaStr);
     const cierreSnap = await tx.get(cierreRef);
     if (cierreSnap.exists()) {
-      throw new Error(`El día ${venta.fechaStr} ya está cerrado. No se puede cambiar el estado de entrega.`);
+      throw new Error(
+        `El día ${venta.fechaStr} ya está cerrado. No se puede cambiar el estado de entrega.`,
+      );
     }
+
+    const entregaMarcadaAt =
+      entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : serverTimestamp();
+
+    const entregaMarcadaBy =
+      entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE ? null : userEmail || null;
 
     tx.update(ventaRef, {
       entregaEstado,
-      entregaMarcadaAt: serverTimestamp(),
-      entregaMarcadaBy: userEmail || null,
+      entregaMarcadaAt,
+      entregaMarcadaBy,
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });
@@ -183,7 +190,9 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
     const cierreRef = docRef(cuentaId, 'cierresCaja', venta.fechaStr);
     const cierreSnap = await tx.get(cierreRef);
     if (cierreSnap.exists()) {
-      throw new Error(`El día ${venta.fechaStr} ya está cerrado. No se puede anular una venta cerrada.`);
+      throw new Error(
+        `El día ${venta.fechaStr} ya está cerrado. No se puede anular una venta cerrada.`,
+      );
     }
 
     const productoRef = doc(db, `cuentas/${cuentaId}/productos/${venta.productoId}`);
@@ -202,8 +211,7 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
     });
 
     tx.update(productoRef, {
-      stockActual: stockActual + Number(venta.cantidad || 0),
-      stockTotalM3: stockActual + Number(venta.cantidad || 0),
+      ...buildStockFields(producto.unidadStock || producto.unidad || venta.unidadStock, stockActual + Number(venta.cantidad || 0)),
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });
@@ -256,9 +264,9 @@ function subscribeVentasAgenda(cuentaId, range = {}, callback) {
 }
 
 export {
-  createVenta,
-  updateVentaEntregaEstado,
   anularVenta,
+  createVenta,
   subscribeVentas,
   subscribeVentasAgenda,
+  updateVentaEntregaEstado,
 };

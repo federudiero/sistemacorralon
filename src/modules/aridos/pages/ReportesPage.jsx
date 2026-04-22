@@ -143,7 +143,7 @@ export default function ReportesPage({ cuentaId }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Reportes y estadísticas" subtitle="Leé el negocio completo: facturación, margen, entregas, clientes, medios de pago y producto más rentable." actions={actions} />
+      <PageHeader title="Reportes y estadísticas" subtitle="Facturación realizada sobre ventas entregadas, con pendientes y no entregadas separados para control operativo." actions={actions} />
 
       <div className="page-section">
         <div className="page-section-body">
@@ -195,26 +195,26 @@ export default function ReportesPage({ cuentaId }) {
       {loading ? <div className="loading loading-spinner loading-lg" /> : (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiMetric title="Facturación total" value={formatCurrency(data?.resumen?.totalVentas || 0)} subtitle={`Ticket promedio ${formatCurrency(data?.resumen?.ticketPromedio || 0)}`} />
-            <KpiMetric title="Costo vendido" value={formatCurrency(data?.resumen?.totalCostoVentas || 0)} subtitle={`Margen ${Number(data?.resumen?.margenPorcentaje || 0).toFixed(1)}%`} />
-            <KpiMetric title="Margen bruto" value={formatCurrency(data?.resumen?.totalMargenBruto || 0)} subtitle={`${data?.resumen?.cantidadVentas || 0} ventas registradas`} />
-            <KpiMetric title="Envíos cobrados" value={formatCurrency(data?.resumen?.totalEnvio || 0)} subtitle={`Cantidad vendida ${Number(data?.resumen?.totalCantidadVendida || 0).toFixed(2)}`} />
+            <KpiMetric title="Facturación realizada" value={formatCurrency(data?.resumen?.totalVentas || 0)} subtitle={`Ticket promedio ${formatCurrency(data?.resumen?.ticketPromedio || 0)}`} />
+            <KpiMetric title="Costo realizado" value={formatCurrency(data?.resumen?.totalCostoVentas || 0)} subtitle={`Margen ${Number(data?.resumen?.margenPorcentaje || 0).toFixed(1)}%`} />
+            <KpiMetric title="Margen bruto realizado" value={formatCurrency(data?.resumen?.totalMargenBruto || 0)} subtitle={`${data?.resumen?.cantidadVentas || 0} ventas entregadas`} />
+            <KpiMetric title="Envíos realizados" value={formatCurrency(data?.resumen?.totalEnvio || 0)} subtitle={`Cantidad entregada ${Number(data?.resumen?.totalCantidadVendida || 0).toFixed(2)}`} />
             <KpiMetric title="Entregadas" value={data?.resumen?.cantidadEntregadas || 0} subtitle={formatCurrency(data?.resumen?.totalEntregado || 0)} />
             <KpiMetric title="Pendientes" value={data?.resumen?.cantidadPendientes || 0} subtitle={formatCurrency(data?.resumen?.totalPendiente || 0)} />
             <KpiMetric title="No entregadas" value={data?.resumen?.cantidadNoEntregadas || 0} subtitle={formatCurrency(data?.resumen?.totalNoEntregado || 0)} />
-            <KpiMetric title="Clientes activos" value={(data?.stats?.ventasPorCliente || []).length} subtitle="Top clientes dentro del período" />
+            <KpiMetric title="Ventas registradas" value={data?.resumen?.cantidadVentasRegistradas || 0} subtitle={formatCurrency(data?.resumen?.totalVentasRegistradas || 0)} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <PieStatsCard title="Ventas por forma de pago" items={data?.stats?.ventasPorPago || []} />
+            <PieStatsCard title="Cobro realizado por forma de pago" items={data?.stats?.ventasPorPago || []} />
             <PieStatsCard title="Estado de las entregas" items={data?.stats?.entregasPorEstado || []} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <StatsList title="Facturación por producto" items={data?.stats?.ventasPorProducto || []} formatValue={formatCurrency} />
-            <StatsList title="Margen bruto por producto" items={data?.stats?.margenPorProducto || []} formatValue={formatCurrency} />
-            <StatsList title="Cantidad vendida por producto" items={data?.stats?.cantidadesPorProducto || []} formatValue={(value) => Number(value).toFixed(2)} />
-            <StatsList title="Clientes con mayor compra" items={data?.stats?.ventasPorCliente || []} formatValue={formatCurrency} />
+            <StatsList title="Facturación realizada por producto" items={data?.stats?.ventasPorProducto || []} formatValue={formatCurrency} />
+            <StatsList title="Margen bruto realizado por producto" items={data?.stats?.margenPorProducto || []} formatValue={formatCurrency} />
+            <StatsList title="Cantidad entregada por producto" items={data?.stats?.cantidadesPorProducto || []} formatValue={(value) => Number(value).toFixed(2)} />
+            <StatsList title="Clientes con mayor compra realizada" items={data?.stats?.ventasPorCliente || []} formatValue={formatCurrency} />
           </div>
 
           <ReportesVentasTable items={data?.ventas || []} />

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
 import useVentasAgenda from '../hooks/useVentasAgenda';
 import { updateVentaEntregaEstado } from '../services/ventas.service';
-import { VENTA_ENTREGA_ESTADOS } from '../utils/constants';
 import {
   formatCurrency,
   formatDateOnly,
@@ -12,6 +11,8 @@ import {
   toInputDate,
 } from '../utils/formatters';
 import EstadoBadge from '../components/shared/EstadoBadge';
+import EntregaStateSelector from '../components/shared/EntregaStateSelector';
+import { ARIDOS_SECTIONS, canWriteSection } from '../utils/permissions';
 
 function buildMonthDate(baseDate, deltaMonths = 0) {
   return new Date(baseDate.getFullYear(), baseDate.getMonth() + deltaMonths, 1);
@@ -63,8 +64,8 @@ function DayCard({ date, active, inMonth, count, onClick, isToday }) {
   );
 }
 
-function AgendaVentaCard({ item, onSetEntrega, processing = false }) {
-  const canChangeEntrega = item.estado !== 'anulada' && item.tipoEntrega === 'envio';
+function AgendaVentaCard({ item, onSetEntrega, canEditEntrega = false, processing = false }) {
+  const canChangeEntrega = item.estado !== 'anulada' && canEditEntrega;
 
   return (
     <div className="agenda-sale-card">
@@ -86,37 +87,38 @@ function AgendaVentaCard({ item, onSetEntrega, processing = false }) {
         <div><b>Estado:</b> {formatEntregaEstado(item.entregaEstado)}</div>
       </div>
 
+      {item.estado === 'anulada' ? (
+        <div className="agenda-sale-card__note">
+          Venta anulada.
+        </div>
+      ) : null}
+
+      {item.estado !== 'anulada' && !canEditEntrega ? (
+        <div className="agenda-sale-card__note">
+          Vista de solo lectura. No tenés permisos para cambiar el estado de entrega.
+        </div>
+      ) : null}
+
       {canChangeEntrega ? (
         <div className="agenda-sale-card__actions">
-          <button
-            className={`btn btn-sm ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.ENTREGADA ? 'btn-success' : 'btn-outline'}`}
+          <EntregaStateSelector
+            value={item.entregaEstado}
             disabled={processing}
-            onClick={() => onSetEntrega?.(item, VENTA_ENTREGA_ESTADOS.ENTREGADA)}
-          >
-            Entregada
-          </button>
-          <button
-            className={`btn btn-sm ${item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA ? 'btn-error' : 'btn-outline'}`}
-            disabled={processing}
-            onClick={() => onSetEntrega?.(item, VENTA_ENTREGA_ESTADOS.NO_ENTREGADA)}
-          >
-            No entregada
-          </button>
+            onChange={(nextValue) => onSetEntrega?.(item, nextValue)}
+            size="sm"
+          />
         </div>
-      ) : (
-        <div className="agenda-sale-card__note">
-          {item.tipoEntrega === 'retiro' ? 'Las ventas retiradas se toman como entregadas automáticamente.' : 'No disponible.'}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
-export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
+export default function AgendaVentasPage({ cuentaId, currentUserEmail, security }) {
   const today = useMemo(() => new Date(), []);
   const [monthCursor, setMonthCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => toInputDate(today));
   const [processing, setProcessing] = useState(false);
+  const canEditEntrega = canWriteSection(security?.permissions, ARIDOS_SECTIONS.VENTAS);
 
   const monthStart = useMemo(() => new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1), [monthCursor]);
   const monthEnd = useMemo(() => new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0), [monthCursor]);
@@ -153,7 +155,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
   const selectedSummary = salesByDate[selectedDate] || { count: 0, amount: 0 };
 
   async function handleEntrega(item, entregaEstado) {
-    if (!item?.id) return;
+    if (!canEditEntrega || !item?.id) return;
     setProcessing(true);
     try {
       await updateVentaEntregaEstado(cuentaId, item.id, entregaEstado, currentUserEmail);
@@ -164,7 +166,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
 
   const actions = (
     <div className="agenda-toolbar">
-      <button className="btn h-12" onClick={() => {
+      <button className="h-12 btn" onClick={() => {
         const next = buildMonthDate(monthCursor, -1);
         setMonthCursor(next);
         setSelectedDate(buildDateKey(next));
@@ -172,7 +174,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
         Mes anterior
       </button>
       <div className="agenda-toolbar__month">{getMonthLabel(monthCursor)}</div>
-      <button className="btn h-12" onClick={() => {
+      <button className="h-12 btn" onClick={() => {
         const next = buildMonthDate(monthCursor, 1);
         setMonthCursor(next);
         setSelectedDate(buildDateKey(next));
@@ -180,7 +182,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
         Mes siguiente
       </button>
       <button
-        className="btn btn-outline h-12"
+        className="h-12 btn btn-outline"
         onClick={() => {
           const now = new Date();
           setMonthCursor(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -196,15 +198,21 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
     <div className="space-y-4">
       <PageHeader
         title="Agenda de ventas"
-        subtitle="Calendario mensual para ver qué días tienen ventas cargadas y marcar si ya se entregaron o no."
+        subtitle="Calendario mensual para ver qué días tienen ventas cargadas y marcar manualmente si quedaron pendientes, entregadas o no entregadas."
         actions={actions}
       />
 
       {error ? <div className="alert alert-error">{error}</div> : null}
 
+      {!canEditEntrega ? (
+        <div className="alert alert-info">
+          Estás viendo la agenda en modo solo lectura. Podés consultar ventas del día, pero no cambiar su estado de entrega.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
         <div className="page-section">
-          <div className="page-section-body space-y-4">
+          <div className="space-y-4 page-section-body">
             <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/60 sm:text-xs">
               {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
                 <div key={day} className="py-1">{day}</div>
@@ -236,7 +244,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
         </div>
 
         <div className="page-section">
-          <div className="page-section-body space-y-4">
+          <div className="space-y-4 page-section-body">
             <div className="agenda-summary-card">
               <div className="agenda-summary-card__eyebrow">Fecha seleccionada</div>
               <div className="agenda-summary-card__date">{formatDateOnly(`${selectedDate}T12:00:00`)}</div>
@@ -251,7 +259,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
               <span className="field-label">Ir directo a una fecha</span>
               <input
                 type="date"
-                className="input input-bordered h-12"
+                className="h-12 input input-bordered"
                 value={selectedDate}
                 onChange={(e) => {
                   const next = e.target.value;
@@ -267,13 +275,19 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail }) {
             <div className="agenda-note-card">
               <div className="agenda-note-card__dot" />
               <div>
-                En el calendario se muestra solo el movimiento básico del día para que en celular siga limpio. El detalle completo se ve al abrir la fecha.
+                La agenda solo resume el día. El estado de entrega se administra manualmente y el cierre diario toma exclusivamente las ventas marcadas como entregadas.
               </div>
             </div>
 
             <div className="space-y-3">
               {selectedItems.length ? selectedItems.map((item) => (
-                <AgendaVentaCard key={item.id} item={item} onSetEntrega={handleEntrega} processing={processing} />
+                <AgendaVentaCard
+                  key={item.id}
+                  item={item}
+                  onSetEntrega={handleEntrega}
+                  canEditEntrega={canEditEntrega}
+                  processing={processing}
+                />
               )) : (
                 <div className="agenda-empty-state">
                   No hay ventas registradas para esta fecha.

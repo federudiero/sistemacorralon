@@ -54,13 +54,13 @@ export default function AridosDashboardPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Dashboard corralón" subtitle="Resumen operativo por fecha, stock, reposición y alertas." actions={actions} />
+      <PageHeader title="Dashboard corralón" subtitle="Tablero operativo: muestra lo registrado y separa lo efectivamente entregado para no mezclar operación con caja realizada." actions={actions} />
       {security?.isReadOnly ? <ReadOnlyBanner message="Entraste en modo solo lectura. Podés consultar métricas y reportes, pero no registrar operaciones." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : data ? (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <KpiCard title="Ventas del día" value={formatCurrency(data.ventasHoyMonto)} subtitle={`${data.ventasHoyOperaciones} operaciones • flete ${formatCurrency(data.ventasHoyEnvio)}`} />
+            <KpiCard title="Realizado del día" value={formatCurrency(data.ventasHoyMonto)} subtitle={`Entregadas ${data.ventasHoyOperaciones} • registrado ${formatCurrency(data.ventasHoyRegistradasMonto)}`} />
             <KpiCard title="Reposición del día" value={String(data.ingresosHoyOperaciones || 0)} subtitle={`Ingresos registrados • costo ${formatCurrency(data.ingresosHoyCosto)}`} />
             <KpiCard title="Cobertura de stock" value={formatPercent(data.coberturaStockPct)} subtitle={`${data.productosActivos} productos activos • ${data.alertas.productosSinStock} sin stock`} />
             <KpiCard title="Stock crítico" value={String(data.stockCritico.length)} subtitle={`${data.alertas.movimientosAjusteDia} ajustes / mermas en la fecha`} />
@@ -75,17 +75,18 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="app-soft-panel rounded-2xl border p-4">
-                    <div className="text-sm app-muted-text">Cantidad vendida</div>
+                    <div className="text-sm app-muted-text">Cantidad entregada</div>
                     <div className="mt-2 text-2xl font-semibold app-title-text">{Number(data.ventasHoyCantidad || 0).toFixed(2)}</div>
+                    <div className="mt-1 text-sm app-muted-text">Pendiente {formatCurrency(data.ventasHoyPendientesMonto || 0)} • no entregado {formatCurrency(data.ventasHoyNoEntregadasMonto || 0)}</div>
                   </div>
                   <div className="app-soft-panel rounded-2xl border p-4">
-                    <div className="text-sm app-muted-text">Venta del mes</div>
+                    <div className="text-sm app-muted-text">Realizado del mes</div>
                     <div className="mt-2 text-2xl font-semibold app-title-text">{formatCurrency(data.ventasMesMonto)}</div>
-                    <div className="mt-1 text-sm app-muted-text">{data.ventasMesOperaciones} operaciones del mes</div>
+                    <div className="mt-1 text-sm app-muted-text">{data.ventasMesOperaciones} entregadas • registradas {formatCurrency(data.ventasMesRegistradasMonto)}</div>
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold app-title-text">Ventas por forma de pago</div>
+                  <div className="mb-2 text-sm font-semibold app-title-text">Cobro realizado por forma de pago</div>
                   <div className="space-y-2">
                     {data.ventasPorPagoDia.length ? data.ventasPorPagoDia.map((item) => (
                       <div key={item.key} className="app-soft-panel flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
@@ -96,7 +97,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold app-title-text">Ventas por entrega</div>
+                  <div className="mb-2 text-sm font-semibold app-title-text">Ventas registradas por tipo de entrega</div>
                   <div className="space-y-2">
                     {data.ventasPorEntregaDia.length ? data.ventasPorEntregaDia.map((item) => (
                       <div key={item.key} className="app-soft-panel flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
@@ -116,25 +117,25 @@ export default function AridosDashboardPage({ cuentaId, security }) {
                   <span className="badge-soft">día / mes</span>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold app-title-text">Top del día</div>
+                  <div className="mb-2 text-sm font-semibold app-title-text">Top entregado del día</div>
                   <div className="space-y-2">
                     {data.topProductosDia.length ? data.topProductosDia.map((item) => (
                       <div key={item.key} className="app-soft-panel flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
                         <span className="app-soft-text">{item.key}</span>
                         <span className="font-semibold app-title-text">{formatQuantity(item.value, item.unidadStock, item.pesoBolsaKg)}</span>
                       </div>
-                    )) : <div className="mobile-empty-state">Sin ventas del día.</div>}
+                    )) : <div className="mobile-empty-state">Sin ventas entregadas en el día.</div>}
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold app-title-text">Top del mes</div>
+                  <div className="mb-2 text-sm font-semibold app-title-text">Top realizado del mes</div>
                   <div className="space-y-2">
                     {data.topProductosMes.length ? data.topProductosMes.map((item) => (
                       <div key={item.key} className="app-soft-panel flex items-center justify-between rounded-xl border px-3 py-2 text-sm">
                         <span className="app-soft-text">{item.key}</span>
                         <span className="font-semibold app-title-text">{formatCurrency(item.value)}</span>
                       </div>
-                    )) : <div className="mobile-empty-state">Sin ventas acumuladas en el mes.</div>}
+                    )) : <div className="mobile-empty-state">Sin ventas realizadas acumuladas en el mes.</div>}
                   </div>
                 </div>
               </div>
