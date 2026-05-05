@@ -58,7 +58,7 @@ export async function updateById(cuentaId, collectionName, id, payload) {
   });
 }
 
-export function subscribeCollection(cuentaId, collectionName, callback, options = {}) {
+export function subscribeCollection(cuentaId, collectionName, callback, options = {}, onError = null) {
   const constraints = [];
   if (options.where) {
     options.where.forEach((entry) => constraints.push(where(entry.field, entry.op, entry.value)));
@@ -74,7 +74,17 @@ export function subscribeCollection(cuentaId, collectionName, callback, options 
     ? query(subcollectionRef(cuentaId, collectionName), ...constraints)
     : subcollectionRef(cuentaId, collectionName);
 
-  return onSnapshot(q, (snapshot) => callback(mapQuerySnapshot(snapshot)));
+  return onSnapshot(
+    q,
+    (snapshot) => callback(mapQuerySnapshot(snapshot)),
+    (error) => {
+      if (typeof onError === 'function') {
+        onError(error);
+        return;
+      }
+      console.error(`Error suscribiendo ${collectionName}:`, error);
+    },
+  );
 }
 
 export async function fetchCollection(cuentaId, collectionName, options = {}) {

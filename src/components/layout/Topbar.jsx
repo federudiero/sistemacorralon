@@ -49,6 +49,14 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
           </div>
 
           <div className="topbar-mobile-actions">
+            <div className="topbar-user-inline hidden md:block">
+              <div className="text-xs app-muted-text">Usuario actual</div>
+              <div className="mt-0.5 text-sm font-semibold app-title-text truncate">
+                {user?.name || 'Usuario'}
+              </div>
+              <div className="text-xs app-muted-text truncate">{user?.email}</div>
+            </div>
+
             <button
               type="button"
               className="theme-toggle-btn topbar-theme-btn"
@@ -62,14 +70,6 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
             <button className="btn btn-ghost btn-sm h-10 px-3" onClick={logout}>
               Salir
             </button>
-          </div>
-        </div>
-
-        <div className="topbar-desktop-row">
-          <div className="topbar-info-card user-card">
-            <div className="text-xs app-muted-text">Usuario actual</div>
-            <div className="mt-1 text-sm font-semibold app-title-text truncate">{user?.name || 'Usuario'}</div>
-            <div className="text-xs app-muted-text truncate">{user?.email}</div>
           </div>
         </div>
       </div>

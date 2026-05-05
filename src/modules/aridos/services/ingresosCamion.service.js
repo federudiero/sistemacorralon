@@ -156,9 +156,9 @@ export async function anularIngresoCamion(cuentaId, ingresoId, motivo, userEmail
 
     const movDoc = doc(movimientosRef);
     tx.set(movDoc, {
-      fecha: new Date(),
-      fechaStr: ingreso.fechaStr,
-      tipo: MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO,
+      fecha: new Date(),             // timestamp real de la anulación
+      fechaStr: ingreso.fechaStr,    // apunta al día original para que el movimiento quede en ese día
+      tipo: MOVIMIENTO_TIPOS.INGRESO_ANULADO,
       productoId: ingreso.productoId,
       productoNombre: ingreso.productoNombre || producto.nombre || '',
       unidadStock: ingreso.unidadStock || producto.unidadStock || producto.unidad || 'm3',
@@ -175,9 +175,9 @@ export async function anularIngresoCamion(cuentaId, ingresoId, motivo, userEmail
   });
 }
 
-export function subscribeIngresosCamion(cuentaId, filters, callback) {
+export function subscribeIngresosCamion(cuentaId, filters, callback, onError) {
   return subscribeCollection(cuentaId, 'ingresosCamion', callback, {
     orderBy: [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
-  });
+  }, onError);
 }

@@ -3,7 +3,7 @@ import { subscribeMovimientosStock } from '../services/movimientosStock.service'
 
 export default function useMovimientosStock(cuentaId, filters = {}) {
   return useCollectionSubscription(
-    (onData) => (cuentaId ? subscribeMovimientosStock(cuentaId, filters, onData) : () => {}),
+    (onData, onError) => (cuentaId ? subscribeMovimientosStock(cuentaId, filters, onData, onError) : () => {}),
     [cuentaId, JSON.stringify(filters)],
   );
 }

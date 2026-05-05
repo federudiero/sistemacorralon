@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useCuenta } from '../contexts/CuentaContext';
-import { useAridosSecurity } from '../modules/aridos/hooks/useAridosSecurity';
-import { seedAccessConfig, seedSampleData } from '../setup/setupSeeds';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useCuenta } from '../../../contexts/CuentaContext';
+import { useAridosSecurity } from '../../../modules/aridos/hooks/useAridosSecurity';
+import { seedAccessConfig, seedSampleData } from '../../../setup/setupSeeds';
 
 function formatRoleLabel(role) {
   switch (role) {

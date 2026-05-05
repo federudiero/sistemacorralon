@@ -69,6 +69,7 @@ async function createVenta(cuentaId, payload, userEmail) {
   const ventasRef = collection(db, `cuentas/${cuentaId}/ventas`);
   const movimientosRef = collection(db, `cuentas/${cuentaId}/movimientosStock`);
   const cierreRef = docRef(cuentaId, 'cierresCaja', data.fechaStr);
+  const ventaDoc = doc(ventasRef);
 
   await runTransaction(db, async (tx) => {
     const cierreSnap = await tx.get(cierreRef);
@@ -86,7 +87,6 @@ async function createVenta(cuentaId, payload, userEmail) {
 
     assertStockAvailable(stockActual, data.cantidad);
 
-    const ventaDoc = doc(ventasRef);
     tx.set(ventaDoc, {
       ...data,
       costoUnitarioSnapshot,
@@ -126,6 +126,8 @@ async function createVenta(cuentaId, payload, userEmail) {
       createdAt: serverTimestamp(),
     });
   });
+
+  return ventaDoc.id;
 }
 
 async function updateVentaEntregaEstado(cuentaId, ventaId, entregaEstado, userEmail) {
@@ -218,8 +220,8 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
 
     const movDoc = doc(movimientosRef);
     tx.set(movDoc, {
-      fecha: new Date(),
-      fechaStr: venta.fechaStr,
+      fecha: new Date(),           // timestamp real de la anulación
+      fechaStr: venta.fechaStr,    // apunta al día original para que el movimiento quede en ese día
       tipo: MOVIMIENTO_TIPOS.DEVOLUCION,
       productoId: venta.productoId,
       productoNombre: venta.productoNombre || producto.nombre || '',
@@ -239,14 +241,14 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
   });
 }
 
-function subscribeVentas(cuentaId, filters, callback) {
+function subscribeVentas(cuentaId, filters, callback, onError) {
   return subscribeCollection(cuentaId, 'ventas', callback, {
     orderBy: [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
-  });
+  }, onError);
 }
 
-function subscribeVentasAgenda(cuentaId, range = {}, callback) {
+function subscribeVentasAgenda(cuentaId, range = {}, callback, onError) {
   const fechaDesde = parseInputDate(range?.fechaDesde, {
     baseTime: new Date(2000, 0, 1, 0, 0, 0, 0),
   });
@@ -260,7 +262,7 @@ function subscribeVentasAgenda(cuentaId, range = {}, callback) {
     where,
     orderBy: [{ field: 'fecha', direction: 'asc' }],
     limit: range?.limit || 500,
-  });
+  }, onError);
 }
 
 export {

@@ -3,7 +3,7 @@ import { subscribeBateas } from '../services/bateas.service';
 
 export default function useBateas(cuentaId) {
   return useCollectionSubscription(
-    (onData) => (cuentaId ? subscribeBateas(cuentaId, onData) : () => {}),
+    (onData, onError) => (cuentaId ? subscribeBateas(cuentaId, onData, onError) : () => {}),
     [cuentaId],
   );
 }

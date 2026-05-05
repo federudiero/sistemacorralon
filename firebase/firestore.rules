@@ -70,6 +70,21 @@ service cloud.firestore {
       return canAccessCuenta(cuentaId);
     }
 
+    function cajaCerrada(cuentaId, fechaStr) {
+      return fechaStr is string
+        && exists(/databases/$(database)/documents/cuentas/$(cuentaId)/cierresCaja/$(fechaStr));
+    }
+
+    function requestFechaAbierta(cuentaId) {
+      return request.resource.data.fechaStr is string
+        && !cajaCerrada(cuentaId, request.resource.data.fechaStr);
+    }
+
+    function resourceFechaAbierta(cuentaId) {
+      return resource.data.fechaStr is string
+        && !cajaCerrada(cuentaId, resource.data.fechaStr);
+    }
+
     function canReadBackoffice(cuentaId) {
       return hasCuentaRole(cuentaId, ['owner', 'admin_full', 'admin', 'operador', 'solo_lectura']);
     }
@@ -179,11 +194,13 @@ service cloud.firestore {
 
     function validVentaEntregaUpdate(cuentaId) {
       return canWriteVentas(cuentaId)
+        && resourceFechaAbierta(cuentaId)
         && onlyChanges(['entregaEstado', 'entregaMarcadaAt', 'entregaMarcadaBy', 'updatedAt', 'updatedBy']);
     }
 
     function validVentaAnnulUpdate(cuentaId) {
       return canAnnulVentas(cuentaId)
+        && resourceFechaAbierta(cuentaId)
         && resource.data.estado != 'anulada'
         && request.resource.data.estado == 'anulada'
         && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
@@ -198,6 +215,7 @@ service cloud.firestore {
 
     function validIngresoAnnulUpdate(cuentaId) {
       return canWriteIngresos(cuentaId)
+        && resourceFechaAbierta(cuentaId)
         && resource.data.estado != 'anulado'
         && request.resource.data.estado == 'anulado'
         && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
@@ -213,6 +231,7 @@ service cloud.firestore {
 
     function validRemitoEstadoUpdate(cuentaId) {
       return canWriteRemitos(cuentaId)
+        && request.resource.data.estado in ['pendiente', 'en_camino', 'entregado', 'cancelado']
         && onlyChanges(['estado', 'updatedAt', 'updatedBy']);
     }
 
@@ -220,15 +239,22 @@ service cloud.firestore {
       return (
         request.resource.data.tipo == 'venta'
           && canWriteVentas(cuentaId)
+          && requestFechaAbierta(cuentaId)
       ) || (
         request.resource.data.tipo == 'devolucion'
           && canAnnulVentas(cuentaId)
+          && requestFechaAbierta(cuentaId)
       ) || (
         request.resource.data.tipo == 'ingreso_reposicion'
+          && canWriteIngresos(cuentaId)
+          && requestFechaAbierta(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'ingreso_anulado'
           && canWriteIngresos(cuentaId)
       ) || (
         request.resource.data.tipo in ['ajuste_positivo', 'ajuste_negativo', 'merma']
           && canWriteAjustes(cuentaId)
+          && requestFechaAbierta(cuentaId)
       ) || (
         request.resource.data.tipo == 'cierre_caja'
           && canWriteCierre(cuentaId)
@@ -288,7 +314,7 @@ service cloud.firestore {
 
       match /ventas/{docId} {
         allow read: if canReadGeneral(cuentaId);
-        allow create: if canWriteVentas(cuentaId);
+        allow create: if canWriteVentas(cuentaId) && requestFechaAbierta(cuentaId);
         allow update: if validVentaEntregaUpdate(cuentaId)
           || validVentaAnnulUpdate(cuentaId)
           || validVentaRemitoLinkUpdate(cuentaId);
@@ -297,14 +323,14 @@ service cloud.firestore {
 
       match /ingresosCamion/{docId} {
         allow read: if canReadBackoffice(cuentaId);
-        allow create: if canWriteIngresos(cuentaId);
+        allow create: if canWriteIngresos(cuentaId) && requestFechaAbierta(cuentaId);
         allow update: if validIngresoAnnulUpdate(cuentaId);
         allow delete: if false;
       }
 
       match /ajustesStock/{docId} {
         allow read: if canReadBackoffice(cuentaId);
-        allow create: if canWriteAjustes(cuentaId);
+        allow create: if canWriteAjustes(cuentaId) && requestFechaAbierta(cuentaId);
         allow update: if validAjusteReversalUpdate(cuentaId);
         allow delete: if false;
       }

@@ -35,10 +35,10 @@ export async function updateBatea(cuentaId, bateaId, payload, userEmail) {
   });
 }
 
-export function subscribeBateas(cuentaId, callback) {
+export function subscribeBateas(cuentaId, callback, onError) {
   return subscribeCollection(cuentaId, 'bateas', callback, {
     orderBy: [{ field: 'nombre', direction: 'asc' }],
-  });
+  }, onError);
 }
 
 export function getBateaById(cuentaId, bateaId) {

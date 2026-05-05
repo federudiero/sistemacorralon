@@ -50,10 +50,10 @@ export async function updateProducto(cuentaId, productoId, payload, userEmail) {
   });
 }
 
-export function subscribeProductos(cuentaId, callback) {
+export function subscribeProductos(cuentaId, callback, onError) {
   return subscribeCollection(cuentaId, 'productos', callback, {
     orderBy: [{ field: 'nombre', direction: 'asc' }],
-  });
+  }, onError);
 }
 
 export function getProductoById(cuentaId, productoId) {

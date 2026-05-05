@@ -11,13 +11,13 @@ function RemitoCard({ item, onChangeEstado, canEdit }) {
       <div className="mobile-data-card-header">
         <div className="min-w-0 flex-1">
           <div className="mobile-data-card-title truncate">{item.clienteNombre || 'Cliente'}</div>
-          <div className="mobile-data-card-subtitle">{formatDateTime(item.fecha)} • {item.numeroRemito || item.id}</div>
+          <div className="mobile-data-card-subtitle">{formatDateTime(item.fecha)} • #{item.numeroRemito || item.id}</div>
         </div>
         <RemitoEstadoBadge value={item.estado} />
       </div>
 
       <div className="mobile-data-grid">
-        <div><span className="mobile-data-label">Remito</span><span className="mobile-data-value">{item.numeroRemito || item.id}</span></div>
+        <div><span className="mobile-data-label">Remito</span><span className="mobile-data-value font-semibold">#{item.numeroRemito || item.id}</span></div>
         <div><span className="mobile-data-label">Producto</span><span className="mobile-data-value">{item.productoNombre || '-'}</span></div>
         <div><span className="mobile-data-label">Cantidad</span><span className="mobile-data-value strong">{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</span></div>
         <div><span className="mobile-data-label">Vehículo</span><span className="mobile-data-value">{item.camion ? formatVehiculoEntrega(item.camion) : '-'}</span></div>
@@ -72,7 +72,7 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
               {filteredItems.length ? filteredItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
-                  <td className="font-mono text-xs">{item.numeroRemito || item.id}</td>
+                  <td className="font-semibold">#{item.numeroRemito || item.id}</td>
                   <td>{item.clienteNombre || '-'}</td>
                   <td>{item.productoNombre || '-'}</td>
                   <td>{formatQuantity(item.cantidad, item.unidadStock, item.pesoBolsaKg)}</td>

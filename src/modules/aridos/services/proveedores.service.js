@@ -20,10 +20,10 @@ export async function updateProveedor(cuentaId, proveedorId, payload) {
   return updateById(cuentaId, 'proveedores', proveedorId, sanitizePayload(payload));
 }
 
-export function subscribeProveedores(cuentaId, callback) {
+export function subscribeProveedores(cuentaId, callback, onError) {
   return subscribeCollection(cuentaId, 'proveedores', callback, {
     orderBy: [{ field: 'nombre', direction: 'asc' }],
-  });
+  }, onError);
 }
 
 export function getProveedorById(cuentaId, proveedorId) {

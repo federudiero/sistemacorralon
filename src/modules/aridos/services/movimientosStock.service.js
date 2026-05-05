@@ -16,22 +16,32 @@ function inDateRange(item, filters = {}) {
   return true;
 }
 
-export function subscribeMovimientosStock(cuentaId, filters, callback) {
+export function subscribeMovimientosStock(cuentaId, filters, callback, onError) {
   const q = query(
     collection(db, `cuentas/${cuentaId}/movimientosStock`),
     orderBy('fecha', 'desc'),
     limit(filters?.limit || 300),
   );
 
-  return onSnapshot(q, (snapshot) => {
-    let items = mapQuerySnapshot(snapshot);
-    if (filters?.tipo) items = items.filter((item) => item.tipo === filters.tipo);
-    if (filters?.productoId) items = items.filter((item) => item.productoId === filters.productoId);
-    if (filters?.categoria) {
-      const categoria = MOVIMIENTO_CATEGORIAS.find((item) => item.value === filters.categoria);
-      if (categoria) items = items.filter((item) => categoria.tipos.includes(item.tipo));
-    }
-    items = items.filter((item) => inDateRange(item, filters));
-    callback(items);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      let items = mapQuerySnapshot(snapshot);
+      if (filters?.tipo) items = items.filter((item) => item.tipo === filters.tipo);
+      if (filters?.productoId) items = items.filter((item) => item.productoId === filters.productoId);
+      if (filters?.categoria) {
+        const categoria = MOVIMIENTO_CATEGORIAS.find((item) => item.value === filters.categoria);
+        if (categoria) items = items.filter((item) => categoria.tipos.includes(item.tipo));
+      }
+      items = items.filter((item) => inDateRange(item, filters));
+      callback(items);
+    },
+    (error) => {
+      if (typeof onError === 'function') {
+        onError(error);
+        return;
+      }
+      console.error('Error suscribiendo movimientosStock:', error);
+    },
+  );
 }

@@ -190,9 +190,9 @@ export async function anularAjusteStock(cuentaId, ajusteId, motivo, userEmail) {
   });
 }
 
-export function subscribeAjustesStock(cuentaId, filters, callback) {
+export function subscribeAjustesStock(cuentaId, filters, callback, onError) {
   return subscribeCollection(cuentaId, 'ajustesStock', callback, {
     orderBy: [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
-  });
+  }, onError);
 }

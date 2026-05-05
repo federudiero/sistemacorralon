@@ -24,10 +24,10 @@ export async function updateCliente(cuentaId, clienteId, payload) {
   return updateById(cuentaId, 'clientes', clienteId, sanitizePayload(payload));
 }
 
-export function subscribeClientes(cuentaId, callback) {
+export function subscribeClientes(cuentaId, callback, onError) {
   return subscribeCollection(cuentaId, 'clientes', callback, {
     orderBy: [{ field: 'nombre', direction: 'asc' }],
-  });
+  }, onError);
 }
 
 export function getClienteById(cuentaId, clienteId) {

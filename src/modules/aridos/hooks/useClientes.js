@@ -3,7 +3,7 @@ import { subscribeClientes } from '../services/clientes.service';
 
 export default function useClientes(cuentaId) {
   return useCollectionSubscription(
-    (onData) => (cuentaId ? subscribeClientes(cuentaId, onData) : () => {}),
+    (onData, onError) => (cuentaId ? subscribeClientes(cuentaId, onData, onError) : () => {}),
     [cuentaId],
   );
 }

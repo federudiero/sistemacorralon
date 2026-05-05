@@ -1,8 +1,8 @@
-import { fetchCollection } from '../modules/aridos/services/base';
-import { createCliente } from '../modules/aridos/services/clientes.service';
-import { createProducto } from '../modules/aridos/services/productos.service';
-import { createProveedor } from '../modules/aridos/services/proveedores.service';
-import { CLIENTE_GENERICO_ALIAS, CLIENTE_GENERICO_NOMBRE } from '../modules/aridos/utils/constants';
+import { fetchCollection } from '../../modules/aridos/services/base';
+import { createCliente } from '../../modules/aridos/services/clientes.service';
+import { createProducto } from '../../modules/aridos/services/productos.service';
+import { createProveedor } from '../../modules/aridos/services/proveedores.service';
+import { CLIENTE_GENERICO_ALIAS, CLIENTE_GENERICO_NOMBRE } from '../../modules/aridos/utils/constants';
 
 const SAMPLE_PRODUCTOS = [
   { nombre: 'Arena Gruesa', categoria: 'Áridos', unidadStock: 'm3', precioVenta: 25000, costoPromedio: 18000, stockMinimo: 8, stockActual: 0 },

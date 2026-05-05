@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 export default function useCollectionSubscription(subscribeFn, deps = []) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     setLoading(true);

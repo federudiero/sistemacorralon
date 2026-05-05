@@ -3,7 +3,7 @@ import { subscribeVentasAgenda } from '../services/ventas.service';
 
 export default function useVentasAgenda(cuentaId, range = {}) {
   return useCollectionSubscription(
-    (onData) => (cuentaId ? subscribeVentasAgenda(cuentaId, range, onData) : () => {}),
+    (onData, onError) => (cuentaId ? subscribeVentasAgenda(cuentaId, range, onData, onError) : () => {}),
     [cuentaId, JSON.stringify(range)],
   );
 }

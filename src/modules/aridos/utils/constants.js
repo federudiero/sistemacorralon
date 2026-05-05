@@ -32,6 +32,7 @@ export const VEHICULOS_ENVIO = [
 
 export const MOVIMIENTO_TIPOS = {
   INGRESO_CAMION: 'ingreso_reposicion',
+  INGRESO_ANULADO: 'ingreso_anulado',
   VENTA: 'venta',
   AJUSTE_POSITIVO: 'ajuste_positivo',
   AJUSTE_NEGATIVO: 'ajuste_negativo',
@@ -42,6 +43,7 @@ export const MOVIMIENTO_TIPOS = {
 
 export const MOVIMIENTO_LABELS = {
   [MOVIMIENTO_TIPOS.INGRESO_CAMION]: 'Ingreso / reposición',
+  [MOVIMIENTO_TIPOS.INGRESO_ANULADO]: 'Ingreso anulado',
   [MOVIMIENTO_TIPOS.VENTA]: 'Venta',
   [MOVIMIENTO_TIPOS.AJUSTE_POSITIVO]: 'Ajuste positivo',
   [MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO]: 'Ajuste negativo',
@@ -51,7 +53,7 @@ export const MOVIMIENTO_LABELS = {
 };
 
 export const MOVIMIENTO_CATEGORIAS = [
-  { value: 'ingresos', label: 'Solo ingresos', tipos: [MOVIMIENTO_TIPOS.INGRESO_CAMION] },
+  { value: 'ingresos', label: 'Solo ingresos', tipos: [MOVIMIENTO_TIPOS.INGRESO_CAMION, MOVIMIENTO_TIPOS.INGRESO_ANULADO] },
   { value: 'ventas', label: 'Solo ventas', tipos: [MOVIMIENTO_TIPOS.VENTA, MOVIMIENTO_TIPOS.DEVOLUCION] },
   { value: 'ajustes', label: 'Solo ajustes', tipos: [MOVIMIENTO_TIPOS.AJUSTE_POSITIVO, MOVIMIENTO_TIPOS.AJUSTE_NEGATIVO, MOVIMIENTO_TIPOS.MERMA] },
   { value: 'cierres', label: 'Solo cierres', tipos: [MOVIMIENTO_TIPOS.CIERRE_CAJA] },

@@ -7,6 +7,7 @@ export async function createRemitoDesdeVenta(cuentaId, ventaId, payload, userEma
   const ventaRef = doc(db, `cuentas/${cuentaId}/ventas/${ventaId}`);
   const remitosRef = collection(db, `cuentas/${cuentaId}/remitos`);
   const remitoRef = doc(remitosRef);
+  const contadorRef = doc(db, `cuentas/${cuentaId}/config/remitosCounter`);
 
   await runTransaction(db, async (tx) => {
     const ventaSnap = await tx.get(ventaRef);
@@ -21,8 +22,13 @@ export async function createRemitoDesdeVenta(cuentaId, ventaId, payload, userEma
       throw new Error('La venta ya tiene remito.');
     }
 
+    const contadorSnap = await tx.get(contadorRef);
+    const ultimo = contadorSnap.exists() ? contadorSnap.data().ultimo : 0;
+    const nuevoNumero = ultimo + 1;
+    tx.set(contadorRef, { ultimo: nuevoNumero });
+
     tx.set(remitoRef, {
-      numeroRemito: remitoRef.id,
+      numeroRemito: String(nuevoNumero).padStart(4, '0'),
       fecha: new Date(),
       fechaStr: venta.fechaStr,
       ventaId,
@@ -54,6 +60,10 @@ export async function createRemitoDesdeVenta(cuentaId, ventaId, payload, userEma
 }
 
 export async function updateRemitoEstado(cuentaId, remitoId, estado, userEmail) {
+  const validEstados = Object.values(REMITO_ESTADOS);
+  if (!validEstados.includes(estado)) {
+    throw new Error(`Estado de remito inválido: ${estado}.`);
+  }
   await updateDoc(doc(db, `cuentas/${cuentaId}/remitos/${remitoId}`), {
     estado,
     updatedAt: serverTimestamp(),
@@ -61,9 +71,9 @@ export async function updateRemitoEstado(cuentaId, remitoId, estado, userEmail) 
   });
 }
 
-export function subscribeRemitos(cuentaId, filters, callback) {
+export function subscribeRemitos(cuentaId, filters, callback, onError) {
   return subscribeCollection(cuentaId, 'remitos', callback, {
     orderBy: [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
-  });
+  }, onError);
 }
