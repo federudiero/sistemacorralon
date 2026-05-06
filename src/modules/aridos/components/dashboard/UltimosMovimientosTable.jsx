@@ -43,7 +43,7 @@ export default function UltimosMovimientosTable({ items = [] }) {
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Detalle</th></tr></thead>
             <tbody>
               {items.length ? items.map((item) => (

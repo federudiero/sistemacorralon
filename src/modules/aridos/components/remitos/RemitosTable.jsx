@@ -66,7 +66,7 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead><tr><th>Fecha</th><th>Remito</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Vehículo</th><th>Chofer</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {filteredItems.length ? filteredItems.map((item) => (

@@ -148,9 +148,6 @@ export default function VentaForm({
         <div className="space-y-2">
           <div className="app-eyebrow">Venta rápida</div>
           <h2 className="page-title !text-[1.45rem] md:!text-[1.8rem]">Registrar venta</h2>
-          <p className="page-subtitle">
-            Elegí fecha, cliente y producto. Si es envío, después vas a poder marcar si se entregó o no.
-          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -175,6 +172,11 @@ export default function VentaForm({
         ) : null}
 
         <div className="form-grid">
+          <div className="form-section-divider form-grid-wide">
+            <span className="form-section-divider__label">Cliente y producto</span>
+            <span className="form-section-divider__line" />
+          </div>
+
           <label className="w-full form-control">
             <span className="field-label">Fecha</span>
             <input
@@ -224,6 +226,11 @@ export default function VentaForm({
             </div>
           ) : null}
 
+          <div className="form-section-divider form-grid-wide">
+            <span className="form-section-divider__label">Precio y pago</span>
+            <span className="form-section-divider__line" />
+          </div>
+
           <div>
             <span className="field-label">{quantityLabel}</span>
             <NumericInputM3
@@ -251,6 +258,11 @@ export default function VentaForm({
             onChange={(nextValue) => setForm((prev) => ({ ...prev, metodoPago: nextValue }))}
             disabled={blocked}
           />
+
+          <div className="form-section-divider form-grid-wide">
+            <span className="form-section-divider__label">Entrega</span>
+            <span className="form-section-divider__line" />
+          </div>
 
           <AppSelect
             label="Tipo de entrega"

@@ -7,10 +7,10 @@ export default function ProtectedRoute({ children }) {
 
   if (isInitializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-base-100 px-6 text-center">
+      <div className="flex min-h-screen items-center justify-center px-6 text-center">
         <div className="space-y-2">
           <div className="loading loading-spinner loading-lg text-primary" />
-          <div className="text-sm text-base-content/70">Verificando sesión…</div>
+          <div className="text-sm app-muted-text">Verificando sesión…</div>
         </div>
       </div>
     );

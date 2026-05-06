@@ -1,3 +1,14 @@
+import UiIconButton from '../../components/shared/UiIconButton';
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
+    </svg>
+  );
+}
+
 function ProveedorCard({ item, onEdit, canEdit }) {
   return (
     <div className="mobile-data-card">
@@ -28,11 +39,9 @@ function ProveedorCard({ item, onEdit, canEdit }) {
 
       <div className="mobile-card-actions">
         {canEdit ? (
-          <button className="btn btn-sm btn-outline w-full" onClick={() => onEdit?.(item)}>
-            Editar proveedor
-          </button>
+          <UiIconButton size="sm" label="Editar proveedor" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} className="flex-1" />
         ) : (
-          <span className="text-xs opacity-60">Solo lectura</span>
+          <span className="text-xs app-muted-text">Solo lectura</span>
         )}
       </div>
     </div>
@@ -59,7 +68,7 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -84,13 +93,13 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
                       </span>
                     </td>
                     <td>
-                      {canEdit ? (
-                        <button className="btn btn-xs btn-outline" onClick={() => onEdit?.(item)}>
-                          Editar
-                        </button>
-                      ) : (
-                        <span className="text-xs opacity-60">Solo lectura</span>
-                      )}
+                      <div className="table-action-cell">
+                        {canEdit ? (
+                          <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} />
+                        ) : (
+                          <span className="text-xs app-muted-text">Solo lectura</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

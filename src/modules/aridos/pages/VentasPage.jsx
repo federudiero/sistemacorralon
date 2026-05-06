@@ -54,8 +54,7 @@ export default function VentasPage({ cuentaId, currentUserEmail, security }) {
     <div className="space-y-4">
       <PageHeader
         title="Ventas"
-        subtitle="Registrá ventas, controlá si se entregaron y generá remitos cuando haga falta."
-        actions={canWriteRemitos ? <Link className="btn h-12" to="/aridos/remitos">Ir a remitos</Link> : null}
+actions={canWriteRemitos ? <Link className="btn btn-outline h-12" to="/aridos/remitos">Ir a remitos</Link> : null}
       />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para cargar ventas nuevas." /> : null}
       <VentaForm cuentaId={cuentaId} currentUserEmail={currentUserEmail} productos={productos} clientes={clientes} disabled={!canWrite} />

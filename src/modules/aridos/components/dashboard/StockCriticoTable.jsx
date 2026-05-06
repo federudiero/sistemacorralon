@@ -43,7 +43,7 @@ export default function StockCriticoTable({ items = [] }) {
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th></tr></thead>
             <tbody>
               {items.length ? items.map((item) => (

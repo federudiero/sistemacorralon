@@ -1,4 +1,14 @@
 import { formatDateTime, formatQuantity } from '../../utils/formatters';
+import UiIconButton from '../shared/UiIconButton';
+
+function UndoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7v6h6" />
+      <path d="M3 13C5.4 7.4 11.5 4 18 5.5a9 9 0 0 1 3 16.5" />
+    </svg>
+  );
+}
 
 function AjusteMobileCard({ item, onAnnular, canAnnul }) {
   const isBlocked = item.revertido || item.esReversion;
@@ -37,7 +47,7 @@ function AjusteMobileCard({ item, onAnnular, canAnnul }) {
       </div>
 
       <div className="mobile-card-actions">
-        {canAnnul && !isBlocked ? <button className="btn btn-xs" onClick={() => onAnnular?.(item)}>Revertir</button> : <span className="text-xs opacity-60">{item.esReversion ? 'Documento de reversión' : item.revertido ? 'Ya revertido' : 'Sin acción'}</span>}
+        {canAnnul && !isBlocked ? <UiIconButton size="sm" label="Revertir" tone="secondary" icon={<UndoIcon />} onClick={() => onAnnular?.(item)} className="flex-1" /> : <span className="text-xs app-muted-text">{item.esReversion ? 'Documento de reversión' : item.revertido ? 'Ya revertido' : 'Sin acción'}</span>}
       </div>
     </div>
   );
@@ -45,8 +55,8 @@ function AjusteMobileCard({ item, onAnnular, canAnnul }) {
 
 export default function AjustesTable({ items = [], onAnnular, canAnnul = false }) {
   return (
-    <div className="rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-base-200 px-4 py-4">
+    <div className="page-section">
+      <div className="flex items-center justify-between gap-3 px-4 py-4" style={{ borderBottom: '1px solid var(--app-border)' }}>
         <div className="font-semibold app-title-text">Ajustes registrados</div>
         <span className="badge-soft">{items.length} registros</span>
       </div>
@@ -58,7 +68,7 @@ export default function AjustesTable({ items = [], onAnnular, canAnnul = false }
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="table table-zebra">
+        <table className="table">
           <thead>
             <tr>
               <th>Fecha</th>
@@ -83,7 +93,7 @@ export default function AjustesTable({ items = [], onAnnular, canAnnul = false }
                   <td>{item.motivo}</td>
                   <td>{item.esReversion ? 'Reversión' : item.revertido ? 'Revertido' : 'Vigente'}</td>
                   <td>{item.createdBy || '-'}</td>
-                  <td>{canAnnul && !isBlocked ? <button className="btn btn-xs" onClick={() => onAnnular?.(item)}>Revertir</button> : <span className="text-xs opacity-60">{item.esReversion ? 'Documento de reversión' : item.revertido ? 'Ya revertido' : 'Sin acción'}</span>}</td>
+                  <td><div className="table-action-cell">{canAnnul && !isBlocked ? <UiIconButton size="sm" label="Revertir" tone="secondary" icon={<UndoIcon />} onClick={() => onAnnular?.(item)} /> : <span className="text-xs app-muted-text">{item.esReversion ? 'Reversión' : item.revertido ? 'Revertido' : '-'}</span>}</div></td>
                 </tr>
               );
             })}

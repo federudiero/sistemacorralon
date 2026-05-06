@@ -1,6 +1,16 @@
 import { useMemo, useState } from 'react';
 import { describeProductoUnidad, formatCurrency, formatQuantity } from '../../utils/formatters';
 import ListSearchInput from '../shared/ListSearchInput';
+import UiIconButton from '../shared/UiIconButton';
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
+    </svg>
+  );
+}
 
 function ProductoCard({ item, onEdit, canEdit }) {
   const costoActual = item.costoActual ?? item.costoPromedio;
@@ -24,7 +34,7 @@ function ProductoCard({ item, onEdit, canEdit }) {
       </div>
 
       <div className="mobile-card-actions">
-        {canEdit ? <button className="btn btn-sm btn-outline" onClick={() => onEdit?.(item)}>Editar</button> : <span className="text-xs opacity-60">Solo lectura</span>}
+        {canEdit ? <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} className="flex-1" /> : <span className="text-xs app-muted-text">Solo lectura</span>}
       </div>
     </div>
   );
@@ -46,7 +56,6 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
         <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Productos</h3>
-            <p className="mt-1 text-sm app-muted-text">Buscá por nombre o categoría para encontrar rápido el material.</p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>
@@ -57,8 +66,8 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
           {filteredItems.length ? filteredItems.map((item) => <ProductoCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay productos cargados.</div>}
         </div>
 
-        <div className="hidden overflow-x-auto border shadow-sm rounded-2xl border-base-200 bg-base-100 md:block">
-          <table className="table table-zebra">
+        <div className="hidden overflow-x-auto md:block">
+          <table className="table">
             <thead><tr><th>Nombre</th><th>Categoría</th><th>Unidad</th><th>Precio venta</th><th>Costo actual</th><th>Stock actual</th><th>Stock mínimo</th><th>Activo</th><th>Acciones</th></tr></thead>
             <tbody>
               {filteredItems.length ? filteredItems.map((item) => {
@@ -73,7 +82,7 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
                     <td>{formatQuantity(item.stockActual ?? item.stockTotalM3, item.unidadStock || item.unidad, item.pesoBolsaKg)}</td>
                     <td>{formatQuantity(item.stockMinimo ?? item.stockMinimoM3, item.unidadStock || item.unidad, item.pesoBolsaKg)}</td>
                     <td><span className={`badge ${item.activo === false ? 'badge-error' : 'badge-success'}`}>{item.activo === false ? 'No' : 'Sí'}</span></td>
-                    <td>{canEdit ? <button className="btn btn-xs btn-outline" onClick={() => onEdit?.(item)}>Editar</button> : <span className="text-xs opacity-60">Solo lectura</span>}</td>
+                    <td><div className="table-action-cell">{canEdit ? <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} /> : <span className="text-xs app-muted-text">Solo lectura</span>}</div></td>
                   </tr>
                 );
               }) : <tr><td colSpan="9" className="text-center app-muted-text">No hay productos cargados.</td></tr>}

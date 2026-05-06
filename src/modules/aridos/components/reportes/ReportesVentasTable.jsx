@@ -54,8 +54,8 @@ export default function ReportesVentasTable({ items = [] }) {
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
 
   return (
-    <div className="mb-4 rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-base-200 px-4 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="mb-4 page-section">
+      <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between" style={{ borderBottom: '1px solid var(--app-border)' }}>
         <div>
           <div className="font-semibold app-title-text">Ventas filtradas</div>
           <p className="mt-1 text-sm app-muted-text">Incluye el estado comercial y el estado de entrega.</p>
@@ -73,7 +73,7 @@ export default function ReportesVentasTable({ items = [] }) {
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead>
               <tr>
                 <th>Fecha</th>

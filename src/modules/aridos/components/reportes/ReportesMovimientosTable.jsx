@@ -38,8 +38,8 @@ export default function ReportesMovimientosTable({ items = [] }) {
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
 
   return (
-    <div className="rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-base-200 px-4 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="page-section">
+      <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between" style={{ borderBottom: '1px solid var(--app-border)' }}>
         <div>
           <div className="font-semibold app-title-text">Movimientos filtrados</div>
           <p className="mt-1 text-sm app-muted-text">Buscá movimientos por tipo, producto o motivo.</p>
@@ -57,7 +57,7 @@ export default function ReportesMovimientosTable({ items = [] }) {
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead>
               <tr>
                 <th>Fecha</th>

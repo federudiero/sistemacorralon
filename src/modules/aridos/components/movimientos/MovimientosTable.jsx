@@ -47,7 +47,6 @@ export default function MovimientosTable({ items = [] }) {
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Detalle de movimientos</h3>
-            <p className="mt-1 text-sm app-muted-text">Buscá por producto, tipo, motivo o usuario.</p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>

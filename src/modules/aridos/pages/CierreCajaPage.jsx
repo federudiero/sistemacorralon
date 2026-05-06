@@ -201,7 +201,6 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
     <div className="space-y-4">
       <PageHeader
         title="Cierre diario"
-        subtitle="Consolidá solo las ventas entregadas del día para control de caja y auditoría operativa."
         actions={
           <label className="w-full form-control sm:w-auto">
             <span className="field-label">Fecha</span>
@@ -258,10 +257,6 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h3 className="text-lg font-semibold app-title-text">Resumen para cierre</h3>
-                  <p className="mt-1 text-sm app-muted-text">
-                    Las ventas pendientes o no entregadas quedan visibles, pero no se suman al
-                    cierre del día.
-                  </p>
                 </div>
 
                 <div className="flex flex-col w-full gap-2 md:w-auto md:flex-row">
@@ -447,10 +442,6 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                 <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold app-title-text">Historial de cierres</h3>
-                    <p className="mt-1 text-sm app-muted-text">
-                      Queda contraído para que la pantalla no se haga eterna cuando se acumulan
-                      cierres.
-                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -523,7 +514,7 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                     </div>
                   </>
                 ) : (
-                  <div className="px-4 py-8 text-sm text-center border border-dashed rounded-2xl border-base-300/70 bg-base-100 text-base-content/60">
+                  <div className="px-4 py-8 text-sm text-center border border-dashed rounded-2xl app-muted-text" style={{ borderColor: 'var(--app-border)', background: 'var(--app-card)' }}>
                     Abrí el historial solo cuando necesites revisar cierres anteriores.
                   </div>
                 )}

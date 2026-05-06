@@ -101,9 +101,6 @@ export default function IngresoCamionForm({
       <div className="space-y-5 page-section-body pb-28 md:pb-6">
         <div>
           <h2 className="text-lg font-semibold app-title-text">Registrar reposición</h2>
-          <p className="mt-1 text-sm app-soft-text">
-            Podés dejar registrada la reposición para la fecha operativa que corresponda.
-          </p>
         </div>
 
         {cajaCerrada ? (

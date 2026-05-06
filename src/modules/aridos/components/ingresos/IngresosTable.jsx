@@ -2,6 +2,25 @@ import { useMemo, useState } from 'react';
 import { formatCurrency, formatDateTime, formatQuantity } from '../../utils/formatters';
 import EstadoBadge from '../shared/EstadoBadge';
 import ListSearchInput from '../shared/ListSearchInput';
+import UiIconButton from '../shared/UiIconButton';
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.6 12s3.55-6.25 9.4-6.25S21.4 12 21.4 12 17.85 18.25 12 18.25 2.6 12 2.6 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+function BanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M8.5 15.5 15.5 8.5" />
+    </svg>
+  );
+}
 
 function IngresoCard({ item, onView, onAnular, processing = false }) {
   return (
@@ -37,13 +56,9 @@ function IngresoCard({ item, onView, onAnular, processing = false }) {
       </div>
 
       <div className="mobile-card-actions">
-        <button className="btn btn-sm btn-outline flex-1" onClick={() => onView?.(item)}>
-          Ver detalle
-        </button>
+        <UiIconButton size="sm" label="Ver detalle" tone="neutral" icon={<EyeIcon />} onClick={() => onView?.(item)} className="flex-1" />
         {item.estado !== 'anulado' && onAnular ? (
-          <button className="btn btn-sm btn-error btn-outline flex-1" onClick={() => onAnular?.(item)} disabled={processing}>
-            Anular
-          </button>
+          <UiIconButton size="sm" label="Anular" tone="danger" icon={<BanIcon />} onClick={() => onAnular?.(item)} disabled={processing} className="flex-1" />
         ) : null}
       </div>
     </div>
@@ -69,7 +84,6 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Reposiciones registradas</h3>
-            <p className="mt-1 text-sm app-muted-text">Podés buscar reposiciones y anularlas mientras el día siga abierto.</p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>
@@ -91,7 +105,7 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -115,11 +129,13 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
                     <td>{item.remitoNumero || '-'}</td>
                     <td>{formatCurrency(item.costoTotal)}</td>
                     <td><EstadoBadge value={item.estado || 'confirmado'} /></td>
-                    <td className="flex flex-wrap gap-2">
-                      <button className="btn btn-xs btn-outline" onClick={() => onView?.(item)}>Ver</button>
-                      {item.estado !== 'anulado' && onAnular ? (
-                        <button className="btn btn-xs btn-error btn-outline" onClick={() => onAnular?.(item)} disabled={processing}>Anular</button>
-                      ) : null}
+                    <td>
+                      <div className="table-action-cell">
+                        <UiIconButton size="sm" label="Ver" tone="neutral" icon={<EyeIcon />} onClick={() => onView?.(item)} />
+                        {item.estado !== 'anulado' && onAnular ? (
+                          <UiIconButton size="sm" label="Anular" tone="danger" icon={<BanIcon />} onClick={() => onAnular?.(item)} disabled={processing} />
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))

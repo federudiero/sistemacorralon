@@ -6,14 +6,14 @@ export default function HomeRedirect() {
 
   if (isInitializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-base-100 px-6 text-center">
+      <div className="flex min-h-screen items-center justify-center px-6 text-center">
         <div className="space-y-2">
           <div className="loading loading-spinner loading-lg text-primary" />
-          <div className="text-sm text-base-content/70">Cargando sesión…</div>
+          <div className="text-sm app-muted-text">Cargando sesión…</div>
         </div>
       </div>
     );
   }
 
-  return <Navigate to={isAuthenticated ? '/aridos' : '/login'} replace />;
+  return <Navigate to={isAuthenticated ? '/aridos/ventas' : '/login'} replace />;
 }

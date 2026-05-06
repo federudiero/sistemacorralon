@@ -35,7 +35,6 @@ export default function IngresosCamionPage({ cuentaId, currentUserEmail, securit
     <div className="space-y-4">
       <PageHeader
         title="Reposición de stock"
-        subtitle="Solo proveedor, producto, cantidad, remito y costo unitario. Si te equivocás, la reposición se puede anular mientras el día siga abierto."
       />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para registrar reposiciones." /> : null}
       <IngresoCamionForm cuentaId={cuentaId} currentUserEmail={currentUserEmail} productos={productos} proveedores={proveedores} disabled={!canWrite} />

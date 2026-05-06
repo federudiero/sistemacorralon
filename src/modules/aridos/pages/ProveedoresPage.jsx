@@ -27,7 +27,7 @@ export default function ProveedoresPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Proveedores" subtitle="ABM base de proveedores" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo proveedor</button> : null} />
+      <PageHeader title="Proveedores" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo proveedor</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para alta o edición de proveedores." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : <ProveedoresTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} /> }

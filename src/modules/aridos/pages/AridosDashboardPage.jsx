@@ -54,7 +54,7 @@ export default function AridosDashboardPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Dashboard corralón" subtitle="Tablero operativo: muestra lo registrado y separa lo efectivamente entregado para no mezclar operación con caja realizada." actions={actions} />
+      <PageHeader title="Dashboard corralón" actions={actions} />
       {security?.isReadOnly ? <ReadOnlyBanner message="Entraste en modo solo lectura. Podés consultar métricas y reportes, pero no registrar operaciones." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : data ? (

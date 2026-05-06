@@ -2,12 +2,10 @@ import { formatCurrency } from '../../utils/formatters';
 
 function Card({ title, value, subtitle }) {
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-200 rounded-2xl">
-      <div className="card-body">
-        <p className="text-sm opacity-70">{title}</p>
-        <p className="text-2xl font-bold">{value}</p>
-        {subtitle ? <p className="text-xs opacity-60">{subtitle}</p> : null}
-      </div>
+    <div className="kpi-card">
+      <p className="text-sm app-muted-text">{title}</p>
+      <p className="text-2xl font-bold app-title-text mt-1">{value}</p>
+      {subtitle ? <p className="text-xs app-muted-text mt-1">{subtitle}</p> : null}
     </div>
   );
 }

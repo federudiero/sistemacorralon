@@ -27,7 +27,7 @@ export default function ClientesPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Clientes" subtitle="ABM base de clientes" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo cliente</button> : null} />
+      <PageHeader title="Clientes" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo cliente</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para alta o edición de clientes." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? <div className="loading loading-spinner loading-lg" /> : <ClientesTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} /> }

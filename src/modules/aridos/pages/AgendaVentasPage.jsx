@@ -43,22 +43,23 @@ function buildCalendarCells(monthDate) {
 }
 
 function DayCard({ date, active, inMonth, count, onClick, isToday }) {
+  const salesLabel = count > 0 ? `${count} venta${count === 1 ? '' : 's'}` : 'sin ventas';
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={`calendar-day-card ${active ? 'is-active' : ''} ${!inMonth ? 'is-outside' : ''}`}
+      aria-label={`${date.getDate()} - ${salesLabel}`}
+      title={salesLabel}
     >
       <div className="calendar-day-card__header">
         <span className={`calendar-day-card__date ${active ? 'is-active' : ''}`}>{date.getDate()}</span>
         {isToday ? <span className="calendar-day-card__today">Hoy</span> : null}
       </div>
 
-      <div className="calendar-day-card__summary">
+      <div className="calendar-day-card__summary" aria-hidden="true">
         <span className={`calendar-day-card__dot ${count > 0 ? 'is-active' : ''}`} />
-        <span className={`calendar-day-card__metric ${count > 0 ? 'has-sales' : 'is-empty'}`}>
-          {count > 0 ? `${count} venta${count === 1 ? '' : 's'}` : 'Libre'}
-        </span>
       </div>
     </button>
   );
@@ -166,15 +167,15 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
 
   const actions = (
     <div className="agenda-toolbar">
-      <button className="h-12 btn" onClick={() => {
+      <div className="agenda-toolbar__month">{getMonthLabel(monthCursor)}</div>
+      <button className="btn" onClick={() => {
         const next = buildMonthDate(monthCursor, -1);
         setMonthCursor(next);
         setSelectedDate(buildDateKey(next));
       }}>
         Mes anterior
       </button>
-      <div className="agenda-toolbar__month">{getMonthLabel(monthCursor)}</div>
-      <button className="h-12 btn" onClick={() => {
+      <button className="btn" onClick={() => {
         const next = buildMonthDate(monthCursor, 1);
         setMonthCursor(next);
         setSelectedDate(buildDateKey(next));
@@ -182,7 +183,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
         Mes siguiente
       </button>
       <button
-        className="h-12 btn btn-outline"
+        className="btn btn-outline"
         onClick={() => {
           const now = new Date();
           setMonthCursor(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -198,7 +199,6 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
     <div className="space-y-4">
       <PageHeader
         title="Agenda de ventas"
-        subtitle="Calendario mensual para ver qué días tienen ventas cargadas y marcar manualmente si quedaron pendientes, entregadas o no entregadas."
         actions={actions}
       />
 
@@ -211,9 +211,9 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
-        <div className="page-section">
+        <div className="page-section agenda-calendar-section overflow-x-hidden">
           <div className="space-y-4 page-section-body">
-            <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-base-content/60 sm:text-xs">
+            <div className="agenda-weekdays grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] sm:gap-3 sm:text-xs app-muted-text">
               {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
                 <div key={day} className="py-1">{day}</div>
               ))}
@@ -222,7 +222,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
             {loading ? (
               <div className="flex justify-center py-12"><span className="loading loading-spinner loading-lg" /></div>
             ) : (
-              <div className="grid grid-cols-7 gap-2 sm:gap-3">
+              <div className="agenda-calendar-grid grid grid-cols-7 gap-2 sm:gap-3">
                 {calendarCells.map((date) => {
                   const key = buildDateKey(date);
                   const dayData = salesByDate[key] || { count: 0, amount: 0 };
@@ -272,12 +272,6 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
               />
             </label>
 
-            <div className="agenda-note-card">
-              <div className="agenda-note-card__dot" />
-              <div>
-                La agenda solo resume el día. El estado de entrega se administra manualmente y el cierre diario toma exclusivamente las ventas marcadas como entregadas.
-              </div>
-            </div>
 
             <div className="space-y-3">
               {selectedItems.length ? selectedItems.map((item) => (

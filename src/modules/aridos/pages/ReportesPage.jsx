@@ -143,7 +143,7 @@ export default function ReportesPage({ cuentaId }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Reportes y estadísticas" subtitle="Facturación realizada sobre ventas entregadas, con pendientes y no entregadas separados para control operativo." actions={actions} />
+      <PageHeader title="Reportes y estadísticas" actions={actions} />
 
       <div className="page-section">
         <div className="page-section-body">

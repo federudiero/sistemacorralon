@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
 import ListSearchInput from '../shared/ListSearchInput';
+import UiIconButton from '../shared/UiIconButton';
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
+    </svg>
+  );
+}
 
 function ProveedorCard({ item, onEdit, canEdit }) {
   return (
@@ -19,7 +29,7 @@ function ProveedorCard({ item, onEdit, canEdit }) {
       </div>
 
       <div className="mobile-card-actions">
-        {canEdit ? <button className="btn btn-sm btn-outline w-full" onClick={() => onEdit?.(item)}>Editar proveedor</button> : <span className="text-xs opacity-60">Solo lectura</span>}
+        {canEdit ? <UiIconButton size="sm" label="Editar proveedor" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} className="flex-1" /> : <span className="text-xs app-muted-text">Solo lectura</span>}
       </div>
     </div>
   );
@@ -41,7 +51,6 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold app-title-text">Proveedores cargados</h3>
-            <p className="mt-1 text-sm app-muted-text">Buscá proveedores por nombre, teléfono, dirección o CUIT.</p>
           </div>
           <span className="badge-soft">{filteredItems.length} registros</span>
         </div>
@@ -53,7 +62,7 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
         </div>
 
         <div className="hidden overflow-x-auto md:block">
-          <table className="table table-zebra">
+          <table className="table">
             <thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>CUIT</th><th>Activo</th><th>Acciones</th></tr></thead>
             <tbody>
               {filteredItems.length ? filteredItems.map((item) => (
@@ -63,7 +72,7 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
                   <td>{item.direccion || '-'}</td>
                   <td>{item.cuit || '-'}</td>
                   <td><span className={`badge ${item.activo === false ? 'badge-error' : 'badge-success'}`}>{item.activo === false ? 'No' : 'Sí'}</span></td>
-                  <td>{canEdit ? <button className="btn btn-xs btn-outline" onClick={() => onEdit?.(item)}>Editar</button> : <span className="text-xs opacity-60">Solo lectura</span>}</td>
+                  <td><div className="table-action-cell">{canEdit ? <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} /> : <span className="text-xs app-muted-text">Solo lectura</span>}</div></td>
                 </tr>
               )) : <tr><td colSpan="6" className="text-center app-muted-text">No hay proveedores cargados.</td></tr>}
             </tbody>
