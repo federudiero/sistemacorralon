@@ -3566,3 +3566,236 @@ html[data-theme='corporate'] .shadow-black\/30 {
     justify-content: space-between;
   }
 }
+
+
+/* ===== Responsive hardening iPhone / tablets / desktop ===== */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+* {
+  min-width: 0;
+}
+
+.app-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.app-container {
+  width: min(100%, 1500px);
+  max-width: 1500px;
+}
+
+.topbar-shell {
+  padding-top: env(safe-area-inset-top);
+}
+
+.topbar-compact-row {
+  min-width: 0;
+}
+
+.sidebar-panel {
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+.sidebar-card {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.sidebar-panel-body {
+  height: 100%;
+  min-height: 0;
+}
+
+.app-nav-shell {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.sidebar-nav {
+  min-height: 0;
+  max-height: 100%;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agenda-calendar-section,
+.agenda-calendar-section .page-section-body,
+.agenda-calendar-grid,
+.agenda-weekdays {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.agenda-calendar-grid,
+.agenda-weekdays {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+.calendar-day-card {
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .app-container {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .app-mobile-safe {
+    padding-bottom: calc(6.9rem + env(safe-area-inset-bottom));
+  }
+
+  .topbar-compact-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .topbar-compact-row > .flex {
+    min-width: 0;
+    gap: 0.55rem;
+  }
+
+  .topbar-mobile-actions {
+    gap: 0.35rem;
+  }
+
+  .topbar-mobile-btn,
+  .topbar-theme-btn {
+    width: 2.45rem;
+    min-width: 2.45rem;
+    height: 2.45rem;
+    min-height: 2.45rem;
+    padding-inline: 0;
+  }
+
+  .topbar-logout-btn {
+    width: 2.45rem;
+    min-width: 2.45rem;
+    height: 2.45rem;
+    min-height: 2.45rem;
+    padding-inline: 0.55rem;
+    font-size: 0;
+  }
+
+  .topbar-logout-btn::before {
+    content: '⎋';
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .topbar-screen-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-screen-subtitle {
+    max-width: 44vw;
+  }
+
+  .sidebar-panel {
+    width: min(92vw, 360px);
+  }
+
+  .sidebar-link {
+    min-height: 2.7rem;
+  }
+
+  .agenda-calendar-section .page-section-body {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .agenda-weekdays,
+  .agenda-calendar-grid {
+    gap: clamp(0.2rem, 1vw, 0.42rem) !important;
+  }
+
+  .agenda-weekdays {
+    font-size: clamp(0.56rem, 2vw, 0.66rem) !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .calendar-day-card {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    min-height: 0;
+    padding: 0.26rem 0.12rem;
+    border-radius: clamp(0.62rem, 2.4vw, 0.9rem);
+  }
+
+  .calendar-day-card__date {
+    font-size: clamp(0.78rem, 3vw, 0.92rem);
+  }
+
+  .calendar-day-card__dot {
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+
+  .mobile-quickbar {
+    padding-left: max(0.65rem, env(safe-area-inset-left));
+    padding-right: max(0.65rem, env(safe-area-inset-right));
+  }
+}
+
+@media (max-width: 390px) {
+  .app-container {
+    padding-left: max(0.55rem, env(safe-area-inset-left));
+    padding-right: max(0.55rem, env(safe-area-inset-right));
+  }
+
+  .topbar-screen-subtitle {
+    max-width: 39vw;
+  }
+
+  .agenda-calendar-section .page-section-body {
+    padding-inline: 0.42rem;
+  }
+
+  .agenda-calendar-grid,
+  .agenda-weekdays {
+    gap: 0.24rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-mobile-safe {
+    padding-bottom: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .sidebar-panel {
+    height: auto;
+    max-height: none;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .sidebar-card {
+    height: auto;
+    max-height: calc(100dvh - 2rem);
+  }
+}

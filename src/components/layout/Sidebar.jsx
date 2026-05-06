@@ -19,8 +19,8 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
       />
 
       <aside className={`sidebar-panel ${open ? 'is-open' : ''}`}>
-        <div className="h-full overflow-hidden page-section xl:sticky xl:top-4 xl:h-fit">
-          <div className="flex h-full flex-col page-section-body sidebar-panel-body">
+        <div className="sidebar-card page-section xl:sticky xl:top-4 xl:h-fit">
+          <div className="flex min-h-0 flex-col page-section-body sidebar-panel-body">
             <div className="flex items-start justify-between gap-3">
               <div className="app-account-card flex-1 min-w-0">
                 <div className="app-eyebrow">Cuenta activa</div>
@@ -50,10 +50,10 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
               </button>
             </div>
 
-            <div className="mt-5 app-nav-shell">
+            <div className="mt-5 min-h-0 app-nav-shell">
               <div className="app-eyebrow px-1">Navegación</div>
 
-              <nav className="mt-3 space-y-1 overflow-y-auto pr-1 xl:pr-0">
+              <nav className="sidebar-nav mt-3 space-y-1 overflow-y-auto pr-1 xl:pr-0">
                 {navItems.map((item) => (
                   <NavLink
                     key={item.to}

@@ -67,7 +67,7 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
               <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
             </button>
 
-            <button className="btn btn-ghost btn-sm h-10 px-3" onClick={logout}>
+            <button className="btn btn-ghost btn-sm h-10 px-3 topbar-logout-btn" onClick={logout}>
               Salir
             </button>
           </div>
