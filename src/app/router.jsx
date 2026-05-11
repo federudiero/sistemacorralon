@@ -23,6 +23,7 @@ import RemitosPage from '../modules/aridos/pages/RemitosPage';
 import ReportesPage from '../modules/aridos/pages/ReportesPage';
 import CierreCajaPage from '../modules/aridos/pages/CierreCajaPage';
 import AgendaVentasPage from '../modules/aridos/pages/AgendaVentasPage';
+import CuentasCorrientesPage from '../modules/aridos/pages/CuentasCorrientesPage';
 import { ARIDOS_SECTIONS } from '../modules/aridos/utils/permissions';
 
 function guard(PageComponent, section) {
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       { path: 'aridos/bateas', element: guard(BateasPage, ARIDOS_SECTIONS.BATEAS) },
       { path: 'aridos/proveedores', element: guard(ProveedoresPage, ARIDOS_SECTIONS.PROVEEDORES) },
       { path: 'aridos/clientes', element: guard(ClientesPage, ARIDOS_SECTIONS.CLIENTES) },
+      { path: 'aridos/cuentas-corrientes', element: guard(CuentasCorrientesPage, ARIDOS_SECTIONS.CLIENTES) },
       { path: 'aridos/ingresos', element: guard(IngresosCamionPage, ARIDOS_SECTIONS.INGRESOS) },
       { path: 'aridos/ventas', element: guard(VentasPage, ARIDOS_SECTIONS.VENTAS) },
       { path: 'aridos/movimientos', element: guard(MovimientosStockPage, ARIDOS_SECTIONS.MOVIMIENTOS) },

@@ -7,6 +7,7 @@ export const ARIDOS_NAV_ITEMS = [
   { label: 'Dashboard', to: '/aridos', section: ARIDOS_SECTIONS.DASHBOARD },
   { label: 'Agenda', to: '/aridos/agenda', section: ARIDOS_SECTIONS.VENTAS },
   { label: 'Clientes', to: '/aridos/clientes', section: ARIDOS_SECTIONS.CLIENTES },
+  { label: 'Cuentas corrientes', to: '/aridos/cuentas-corrientes', section: ARIDOS_SECTIONS.CLIENTES },
   { label: 'Productos', to: '/aridos/productos', section: ARIDOS_SECTIONS.PRODUCTOS },
   { label: 'Movimientos', to: '/aridos/movimientos', section: ARIDOS_SECTIONS.MOVIMIENTOS },
   { label: 'Reportes', to: '/aridos/reportes', section: ARIDOS_SECTIONS.REPORTES },

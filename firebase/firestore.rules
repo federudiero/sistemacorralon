@@ -1,4 +1,5 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -27,8 +28,34 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/cuentas/$(cuentaId)/usuarios/$(uid));
     }
 
+    function aridosProfileExists(uid) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/aridos_usuarios/$(uid));
+    }
+
+    function aridosProfileDoc(uid) {
+      return get(/databases/$(database)/documents/aridos_usuarios/$(uid));
+    }
+
     function isOwnProfile(uid) {
       return signedIn() && request.auth.uid == uid;
+    }
+
+    function isActiveProfileForCuenta(cuentaId, uid) {
+      return signedIn()
+        && aridosProfileExists(uid)
+        && aridosProfileDoc(uid).data.active != false
+        && aridosProfileDoc(uid).data.cuentaId == cuentaId;
+    }
+
+    function profileRoleForCuenta(cuentaId, uid) {
+      return isActiveProfileForCuenta(cuentaId, uid)
+        ? (
+          aridosProfileDoc(uid).data.role == 'owner'
+            ? 'admin_full'
+            : aridosProfileDoc(uid).data.role
+        )
+        : '';
     }
 
     function isCuentaOwner(cuentaId) {
@@ -39,14 +66,23 @@ service cloud.firestore {
 
     function isCuentaMember(cuentaId) {
       return signedIn()
-        && membershipExists(cuentaId, request.auth.uid)
-        && membershipDoc(cuentaId, request.auth.uid).data.active == true;
+        && (
+          (
+            membershipExists(cuentaId, request.auth.uid)
+            && membershipDoc(cuentaId, request.auth.uid).data.active == true
+          )
+          || isActiveProfileForCuenta(cuentaId, request.auth.uid)
+        );
     }
 
     function memberRole(cuentaId) {
-      return isCuentaMember(cuentaId)
+      return (
+        signedIn()
+        && membershipExists(cuentaId, request.auth.uid)
+        && membershipDoc(cuentaId, request.auth.uid).data.active == true
+      )
         ? membershipDoc(cuentaId, request.auth.uid).data.role
-        : '';
+        : profileRoleForCuenta(cuentaId, request.auth.uid);
     }
 
     function hasCuentaRole(cuentaId, roles) {
@@ -195,27 +231,18 @@ service cloud.firestore {
     function validVentaEntregaUpdate(cuentaId) {
       return canWriteVentas(cuentaId)
         && resourceFechaAbierta(cuentaId)
-        && onlyChanges(['entregaEstado', 'entregaMarcadaAt', 'entregaMarcadaBy', 'updatedAt', 'updatedBy']);
+        && onlyChanges([
+          'entregaEstado',
+          'entregaMarcadaAt',
+          'entregaMarcadaBy',
+          'updatedAt',
+          'updatedBy'
+        ]);
     }
 
-    function validVentaAnnulUpdate(cuentaId) {
-      return canAnnulVentas(cuentaId)
-        && resourceFechaAbierta(cuentaId)
-        && resource.data.estado != 'anulada'
-        && request.resource.data.estado == 'anulada'
-        && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
-    }
-
-    function validVentaRemitoLinkUpdate(cuentaId) {
-      return canWriteRemitos(cuentaId)
-        && request.resource.data.remitoGenerado == true
-        && request.resource.data.remitoId is string
-        && onlyChanges(['remitoGenerado', 'remitoId', 'updatedAt']);
-    }
-
-    function validVentaPagoUpdate(cuentaId) {
+    function validVentaPagoCuentaCorrienteUpdate(cuentaId) {
       return canWriteClientes(cuentaId)
-        && request.resource.data.estadoPago in ['pendiente', 'parcial', 'pagado']
+        && resource.data.condicionPago == 'cuenta_corriente'
         && onlyChanges([
           'totalPagado',
           'saldoPendiente',
@@ -227,12 +254,43 @@ service cloud.firestore {
         ]);
     }
 
+    function validVentaAnnulUpdate(cuentaId) {
+      return canAnnulVentas(cuentaId)
+        && resourceFechaAbierta(cuentaId)
+        && resource.data.estado != 'anulada'
+        && request.resource.data.estado == 'anulada'
+        && onlyChanges([
+          'estado',
+          'anuladaAt',
+          'anuladaBy',
+          'motivoAnulacion',
+          'updatedAt'
+        ]);
+    }
+
+    function validVentaRemitoLinkUpdate(cuentaId) {
+      return canWriteRemitos(cuentaId)
+        && request.resource.data.remitoGenerado == true
+        && request.resource.data.remitoId is string
+        && onlyChanges([
+          'remitoGenerado',
+          'remitoId',
+          'updatedAt'
+        ]);
+    }
+
     function validIngresoAnnulUpdate(cuentaId) {
       return canWriteIngresos(cuentaId)
         && resourceFechaAbierta(cuentaId)
         && resource.data.estado != 'anulado'
         && request.resource.data.estado == 'anulado'
-        && onlyChanges(['estado', 'anuladaAt', 'anuladaBy', 'motivoAnulacion', 'updatedAt']);
+        && onlyChanges([
+          'estado',
+          'anuladaAt',
+          'anuladaBy',
+          'motivoAnulacion',
+          'updatedAt'
+        ]);
     }
 
     function validAjusteReversalUpdate(cuentaId) {
@@ -240,13 +298,23 @@ service cloud.firestore {
         && resource.data.revertido != true
         && request.resource.data.revertido == true
         && request.resource.data.reversionAjusteId is string
-        && onlyChanges(['revertido', 'revertidoAt', 'revertidoBy', 'motivoReversion', 'reversionAjusteId', 'updatedAt']);
+        && onlyChanges([
+          'revertido',
+          'revertidoAt',
+          'revertidoBy',
+          'motivoReversion',
+          'reversionAjusteId',
+          'updatedAt'
+        ]);
     }
 
     function validRemitoEstadoUpdate(cuentaId) {
       return canWriteRemitos(cuentaId)
-        && request.resource.data.estado in ['pendiente', 'en_camino', 'entregado', 'cancelado']
-        && onlyChanges(['estado', 'updatedAt', 'updatedBy']);
+        && onlyChanges([
+          'estado',
+          'updatedAt',
+          'updatedBy'
+        ]);
     }
 
     function canCreateMovimiento(cuentaId) {
@@ -263,15 +331,28 @@ service cloud.firestore {
           && canWriteIngresos(cuentaId)
           && requestFechaAbierta(cuentaId)
       ) || (
-        request.resource.data.tipo == 'ingreso_anulado'
-          && canWriteIngresos(cuentaId)
-      ) || (
         request.resource.data.tipo in ['ajuste_positivo', 'ajuste_negativo', 'merma']
           && canWriteAjustes(cuentaId)
           && requestFechaAbierta(cuentaId)
       ) || (
         request.resource.data.tipo == 'cierre_caja'
           && canWriteCierre(cuentaId)
+      );
+    }
+
+    function canCreateCuentaCorrienteMovimiento(cuentaId) {
+      return (
+        request.resource.data.tipo == 'venta'
+          && canWriteVentas(cuentaId)
+          && requestFechaAbierta(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'pago'
+          && canWriteClientes(cuentaId)
+          && requestFechaAbierta(cuentaId)
+      ) || (
+        request.resource.data.tipo == 'anulacion_venta'
+          && canAnnulVentas(cuentaId)
+          && requestFechaAbierta(cuentaId)
       );
     }
 
@@ -297,14 +378,16 @@ service cloud.firestore {
       match /usuarios/{uid} {
         allow read: if canAccessCuenta(cuentaId);
         allow create: if canManageMembers(cuentaId) && validManagedMemberDoc(cuentaId, uid);
-        allow update: if (canManageMembers(cuentaId) && validManagedMemberDoc(cuentaId, uid))
-          || validOwnMembershipUpdate(cuentaId, uid);
+        allow update: if (
+          canManageMembers(cuentaId)
+          && validManagedMemberDoc(cuentaId, uid)
+        ) || validOwnMembershipUpdate(cuentaId, uid);
         allow delete: if false;
       }
 
       match /productos/{docId} {
         allow read: if canReadGeneral(cuentaId);
-        allow create, update: if canWriteCatalog(cuentaId);
+        allow create, update: if canWriteCatalog(cuentaId) || canWriteVentas(cuentaId);
         allow delete: if false;
       }
 
@@ -322,7 +405,7 @@ service cloud.firestore {
 
       match /clientes/{docId} {
         allow read: if canReadGeneral(cuentaId);
-        allow create, update: if canWriteClientes(cuentaId);
+        allow create, update: if canWriteClientes(cuentaId) || canWriteVentas(cuentaId);
         allow delete: if false;
       }
 
@@ -330,9 +413,9 @@ service cloud.firestore {
         allow read: if canReadGeneral(cuentaId);
         allow create: if canWriteVentas(cuentaId) && requestFechaAbierta(cuentaId);
         allow update: if validVentaEntregaUpdate(cuentaId)
+          || validVentaPagoCuentaCorrienteUpdate(cuentaId)
           || validVentaAnnulUpdate(cuentaId)
-          || validVentaRemitoLinkUpdate(cuentaId)
-          || validVentaPagoUpdate(cuentaId);
+          || validVentaRemitoLinkUpdate(cuentaId);
         allow delete: if false;
       }
 
@@ -354,7 +437,15 @@ service cloud.firestore {
         allow read: if canReadBackoffice(cuentaId);
         allow create: if canCreateMovimiento(cuentaId);
         allow update: if false;
-        allow delete: if canAnnulCierre(cuentaId) && resource.data.tipo == 'cierre_caja';
+        allow delete: if canAnnulCierre(cuentaId)
+          && resource.data.tipo == 'cierre_caja';
+      }
+
+      match /cuentaCorrienteMovimientos/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create: if canCreateCuentaCorrienteMovimiento(cuentaId);
+        allow update: if false;
+        allow delete: if false;
       }
 
       match /remitos/{docId} {
@@ -369,15 +460,6 @@ service cloud.firestore {
         allow create: if canWriteCierre(cuentaId);
         allow update: if false;
         allow delete: if canAnnulCierre(cuentaId);
-      }
-
-      match /cuentaCorrienteMovimientos/{docId} {
-        allow read: if canReadGeneral(cuentaId);
-        allow create: if canWriteClientes(cuentaId)
-          && request.resource.data.fechaStr is string
-          && !cajaCerrada(cuentaId, request.resource.data.fechaStr)
-          && request.resource.data.tipo in ['venta', 'pago', 'anulacion_venta'];
-        allow update, delete: if false;
       }
 
       match /{document=**} {

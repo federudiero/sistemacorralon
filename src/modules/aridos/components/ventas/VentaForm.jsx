@@ -171,26 +171,13 @@ export default function VentaForm({
 
   return (
     <div className="mb-4 page-section">
-      <div className="page-section-body space-y-5 pb-24 md:pb-6">
+      <div className="pb-24 space-y-5 page-section-body md:pb-6">
         <div className="space-y-2">
           <div className="app-eyebrow">Venta rápida</div>
           <h2 className="page-title !text-[1.45rem] md:!text-[1.8rem]">Registrar venta</h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="app-inline-meta">
-            <span className="app-muted-text">Fecha operativa</span>
-            <strong className="app-title-text">{fechaOperativa}</strong>
-          </div>
-          <div className="app-inline-meta">
-            <span className="app-muted-text">Entrega</span>
-            <strong className="app-title-text">{isEnvio ? 'Se lo llevamos' : 'Retiro en corralón'}</strong>
-          </div>
-          <div className="app-inline-meta">
-            <span className="app-muted-text">Total actual</span>
-            <strong className="app-title-text">{formatCurrency(totalFinal)}</strong>
-          </div>
-        </div>
+        
 
         {cajaCerrada ? (
           <div className="alert alert-warning">
@@ -239,7 +226,7 @@ export default function VentaForm({
           />
 
           {cliente?.telefono || cliente?.direccion ? (
-            <div className="form-grid-wide app-soft-panel rounded-2xl border px-4 py-3">
+            <div className="px-4 py-3 border form-grid-wide app-soft-panel rounded-2xl">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <div className="field-label">Teléfono</div>
@@ -322,7 +309,7 @@ export default function VentaForm({
               disabled={blocked}
             />
           ) : (
-            <div className="app-soft-panel rounded-2xl border px-4 py-3">
+            <div className="px-4 py-3 border app-soft-panel rounded-2xl">
               <div className="field-label">Cuenta corriente</div>
               <div className="mt-1 text-sm app-soft-text">
                 La venta descuenta stock, pero no entra como caja cobrada hasta registrar el pago del cliente.
@@ -398,7 +385,7 @@ export default function VentaForm({
           </button>
         </div>
 
-        <div className="hidden items-center justify-between gap-4 md:flex">
+        <div className="items-center justify-between hidden gap-4 md:flex">
           <div className="min-w-0">
             <div className="field-label !mb-1">Total a cobrar</div>
             <div className="text-3xl font-semibold app-title-text">{formatCurrency(totalFinal)}</div>
@@ -408,7 +395,7 @@ export default function VentaForm({
           </div>
 
           <div className="form-actions !border-0 !pt-0">
-            <button className="btn btn-primary h-12 px-6" onClick={handleSubmit} disabled={submitBlocked}>
+            <button className="h-12 px-6 btn btn-primary" onClick={handleSubmit} disabled={submitBlocked}>
               {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
             </button>
           </div>
