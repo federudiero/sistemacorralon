@@ -45,12 +45,20 @@ function filterOperationalMovimientos(movimientos = []) {
   );
 }
 
-function buildSummary(ventas = []) {
+function isCuentaCorrienteVenta(item = {}) {
+  return item.condicionPago === 'cuenta_corriente' || item.metodoPago === 'cuenta_corriente';
+}
+
+function buildSummary(ventas = [], cuentaCorrienteMovimientos = []) {
   const base = {
     totalVentas: 0,
     totalEnvio: 0,
     totalCostoVentas: 0,
     totalMargenBruto: 0,
+    totalCobradoContado: 0,
+    totalCuentaCorrienteGenerada: 0,
+    totalCobrosCuentaCorriente: 0,
+    totalCajaReal: 0,
     cantidadOperaciones: 0,
     cantidadEntregadas: 0,
     cantidadPendientes: 0,
@@ -58,6 +66,8 @@ function buildSummary(ventas = []) {
     totalPendienteEntrega: 0,
     totalNoEntregado: 0,
     porMetodoPago: {},
+    porMetodoPagoCobrado: {},
+    porMetodoPagoFacturado: {},
     porProducto: {},
   };
 
@@ -66,7 +76,7 @@ function buildSummary(ventas = []) {
 
     const totalVenta = Number(item.total || 0);
     const costoSnapshot = Number(item.costoTotalSnapshot || 0);
-    const metodo = item.metodoPago || 'sin_definir';
+    const metodo = item.metodoCobro || item.metodoPago || 'sin_definir';
     const producto = item.productoNombre || 'Sin producto';
 
     if (item.entregaEstado === VENTA_ENTREGA_ESTADOS.NO_ENTREGADA) {
@@ -87,9 +97,29 @@ function buildSummary(ventas = []) {
     base.totalMargenBruto += totalVenta - costoSnapshot;
     base.cantidadOperaciones += 1;
     base.cantidadEntregadas += 1;
-    base.porMetodoPago[metodo] = (base.porMetodoPago[metodo] || 0) + totalVenta;
     base.porProducto[producto] = (base.porProducto[producto] || 0) + totalVenta;
+    base.porMetodoPagoFacturado[item.metodoPago || metodo] = (base.porMetodoPagoFacturado[item.metodoPago || metodo] || 0) + totalVenta;
+
+    if (isCuentaCorrienteVenta(item)) {
+      base.totalCuentaCorrienteGenerada += totalVenta;
+      return;
+    }
+
+    base.totalCobradoContado += totalVenta;
+    base.porMetodoPagoCobrado[metodo] = (base.porMetodoPagoCobrado[metodo] || 0) + totalVenta;
   });
+
+  cuentaCorrienteMovimientos.forEach((item) => {
+    if (item.tipo !== 'pago') return;
+    const monto = Number(item.haber ?? item.monto ?? 0);
+    if (monto <= 0) return;
+    const metodo = item.metodoCobro || 'sin_definir';
+    base.totalCobrosCuentaCorriente += monto;
+    base.porMetodoPagoCobrado[metodo] = (base.porMetodoPagoCobrado[metodo] || 0) + monto;
+  });
+
+  base.totalCajaReal = base.totalCobradoContado + base.totalCobrosCuentaCorriente;
+  base.porMetodoPago = base.porMetodoPagoCobrado;
 
   return base;
 }
@@ -124,17 +154,39 @@ function buildMovimientosFingerprint(movimientos = []) {
     .join('||');
 }
 
-function buildResumenRevision({ ventas = [], movimientos = [], resumen = {}, fechaStr = '' } = {}) {
+function buildCuentaCorrienteFingerprint(movimientos = []) {
+  return movimientos
+    .map((item) => [
+      item.id,
+      item.tipo || '',
+      item.clienteId || '',
+      item.ventaId || '',
+      Number(item.debe || 0),
+      Number(item.haber || 0),
+      Number(item.monto || 0),
+      item.metodoCobro || '',
+      normalizeTimestamp(item.createdAt),
+      normalizeTimestamp(item.updatedAt),
+    ].join('|'))
+    .join('||');
+}
+
+function buildResumenRevision({ ventas = [], movimientos = [], cuentaCorrienteMovimientos = [], resumen = {}, fechaStr = '' } = {}) {
   return {
     fechaStr,
     ventasCount: ventas.length,
     movimientosCount: movimientos.length,
+    cuentaCorrienteMovimientosCount: cuentaCorrienteMovimientos.length,
     fingerprint: JSON.stringify({
       ventas: buildVentasFingerprint(ventas),
       movimientos: buildMovimientosFingerprint(movimientos),
+      cuentaCorrienteMovimientos: buildCuentaCorrienteFingerprint(cuentaCorrienteMovimientos),
       totalVentas: Number(resumen.totalVentas || 0),
       totalCostoVentas: Number(resumen.totalCostoVentas || 0),
       totalMargenBruto: Number(resumen.totalMargenBruto || 0),
+      totalCajaReal: Number(resumen.totalCajaReal || 0),
+      totalCuentaCorrienteGenerada: Number(resumen.totalCuentaCorrienteGenerada || 0),
+      totalCobrosCuentaCorriente: Number(resumen.totalCobrosCuentaCorriente || 0),
       cantidadOperaciones: Number(resumen.cantidadOperaciones || 0),
       cantidadEntregadas: Number(resumen.cantidadEntregadas || 0),
       cantidadPendientes: Number(resumen.cantidadPendientes || 0),
@@ -150,12 +202,16 @@ async function fetchClosureDataset(cuentaId, fechaStr) {
   if (from) fallbackWhereFecha.push({ field: 'fecha', op: '>=', value: from });
   if (to) fallbackWhereFecha.push({ field: 'fecha', op: '<=', value: to });
 
-  const [rawVentas, rawMovimientos, cierreDoc, cierreMovimientoDoc] = await Promise.all([
+  const [rawVentas, rawMovimientos, rawCuentaCorrienteMovimientos, cierreDoc, cierreMovimientoDoc] = await Promise.all([
     fetchCollection(cuentaId, 'ventas', {
       where: whereFechaStr.length ? whereFechaStr : fallbackWhereFecha,
       ...(whereFechaStr.length ? {} : { orderBy: [{ field: 'fecha', direction: 'desc' }] }),
     }),
     fetchCollection(cuentaId, 'movimientosStock', {
+      where: whereFechaStr.length ? whereFechaStr : fallbackWhereFecha,
+      ...(whereFechaStr.length ? {} : { orderBy: [{ field: 'fecha', direction: 'desc' }] }),
+    }),
+    fetchCollection(cuentaId, 'cuentaCorrienteMovimientos', {
       where: whereFechaStr.length ? whereFechaStr : fallbackWhereFecha,
       ...(whereFechaStr.length ? {} : { orderBy: [{ field: 'fecha', direction: 'desc' }] }),
     }),
@@ -165,8 +221,9 @@ async function fetchClosureDataset(cuentaId, fechaStr) {
 
   const ventasByFechaStr = sortByFechaDesc(rawVentas);
   const movimientosByFechaStr = sortByFechaDesc(rawMovimientos);
+  const cuentaCorrienteMovimientos = sortByFechaDesc(rawCuentaCorrienteMovimientos);
   const movimientos = filterOperationalMovimientos(movimientosByFechaStr);
-  const resumen = buildSummary(ventasByFechaStr);
+  const resumen = buildSummary(ventasByFechaStr, cuentaCorrienteMovimientos);
   const ventasEntregadas = ventasByFechaStr.filter(shouldCountForClosure);
   const ventasPendientes = ventasByFechaStr.filter(
     (item) => item.estado !== 'anulada' && item.entregaEstado === VENTA_ENTREGA_ESTADOS.PENDIENTE,
@@ -179,6 +236,7 @@ async function fetchClosureDataset(cuentaId, fechaStr) {
     fechaStr,
     ventas: ventasByFechaStr,
     movimientos,
+    cuentaCorrienteMovimientos,
     resumen,
   });
 
@@ -189,6 +247,7 @@ async function fetchClosureDataset(cuentaId, fechaStr) {
     ventasPendientes,
     ventasNoEntregadas,
     movimientos,
+    cuentaCorrienteMovimientos,
     resumen,
     revision,
     cierreExistente: cierreDoc.exists() ? { id: cierreDoc.id, ...cierreDoc.data() } : null,
@@ -247,10 +306,12 @@ export async function crearCierreCaja(cuentaId, fechaStr, userEmail) {
         ventasPendientesIds: fresh.ventasPendientes.map((item) => item.id),
         ventasNoEntregadasIds: fresh.ventasNoEntregadas.map((item) => item.id),
         movimientosIds: fresh.movimientos.map((item) => item.id),
+        cuentaCorrienteMovimientosIds: fresh.cuentaCorrienteMovimientos.map((item) => item.id),
         resumenRevision: {
           fechaStr: fresh.revision.fechaStr,
           ventasCount: fresh.revision.ventasCount,
           movimientosCount: fresh.revision.movimientosCount,
+          cuentaCorrienteMovimientosCount: fresh.revision.cuentaCorrienteMovimientosCount,
           fingerprint: fresh.revision.fingerprint,
           source: 'fechaStr',
         },
@@ -272,7 +333,10 @@ export async function crearCierreCaja(cuentaId, fechaStr, userEmail) {
         productoNombre: '',
         unidadStock: 'unidad',
         cantidad: 0,
-        montoTotal: fresh.resumen.totalVentas,
+        montoTotal: fresh.resumen.totalCajaReal,
+        montoFacturado: fresh.resumen.totalVentas,
+        montoCuentaCorrienteGenerada: fresh.resumen.totalCuentaCorrienteGenerada,
+        montoCobrosCuentaCorriente: fresh.resumen.totalCobrosCuentaCorriente,
         referenciaTipo: 'cierre_caja',
         referenciaId: fechaStr,
         motivo: `Cierre diario ${fechaStr}`,

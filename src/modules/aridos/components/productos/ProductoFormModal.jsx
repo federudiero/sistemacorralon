@@ -38,7 +38,7 @@ export default function ProductoFormModal({ open, initialData, onClose, onSubmit
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-3xl">
-        <h3 className="font-bold text-lg">{initialData ? 'Editar producto' : 'Nuevo producto'}</h3>
+        <h3 className="font-bold text-lg app-title-text">{initialData ? 'Editar producto' : 'Nuevo producto'}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
           <label className="form-control w-full"><span className="label-text mb-1">Nombre</span><input className="input input-bordered" value={form.nombre ?? ''} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} disabled={blocked} /></label>
           <label className="form-control w-full"><span className="label-text mb-1">Categoría</span><input className="input input-bordered" value={form.categoria ?? ''} onChange={(e) => setForm((p) => ({ ...p, categoria: e.target.value }))} disabled={blocked} /></label>

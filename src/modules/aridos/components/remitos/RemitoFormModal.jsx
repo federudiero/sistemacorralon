@@ -30,8 +30,8 @@ export default function RemitoFormModal({ open, venta, cuentaId, currentUserEmai
   return (
     <dialog className="modal modal-open">
       <div className="modal-box">
-        <h3 className="font-bold text-lg">Generar remito</h3>
-        <p className="text-sm opacity-70 mt-1">Venta: {venta.clienteNombre} / {venta.productoNombre} / {formatQuantity(venta.cantidad, venta.unidadStock, venta.pesoBolsaKg)}</p>
+        <h3 className="font-bold text-lg app-title-text">Generar remito</h3>
+        <p className="mt-1 text-sm app-muted-text">Venta: {venta.clienteNombre} / {venta.productoNombre} / {formatQuantity(venta.cantidad, venta.unidadStock, venta.pesoBolsaKg)}</p>
         <div className="grid grid-cols-1 gap-3 mt-4">
           <label className="form-control w-full"><span className="label-text mb-1">Vehículo / camión</span><input className="input input-bordered" value={form.camion} onChange={(e) => setForm((p) => ({ ...p, camion: e.target.value }))} /></label>
           <label className="form-control w-full"><span className="label-text mb-1">Chofer</span><input className="input input-bordered" value={form.chofer} onChange={(e) => setForm((p) => ({ ...p, chofer: e.target.value }))} /></label>

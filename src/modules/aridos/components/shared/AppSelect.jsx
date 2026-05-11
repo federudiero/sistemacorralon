@@ -73,8 +73,8 @@ export default function AppSelect({
     if (!open || !triggerRef.current || !canUsePortal()) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth ?? document.documentElement.clientWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight ?? document.documentElement.clientHeight;
 
     const width = rect.width;
     const maxLeft = Math.max(VIEWPORT_GUTTER_PX, viewportWidth - width - VIEWPORT_GUTTER_PX);
@@ -118,10 +118,14 @@ export default function AppSelect({
 
     window.addEventListener('resize', handleViewportChange);
     window.addEventListener('scroll', handleViewportChange, true);
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('scroll', handleViewportChange);
 
     return () => {
       window.removeEventListener('resize', handleViewportChange);
       window.removeEventListener('scroll', handleViewportChange, true);
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
     };
   }, [open, updateMenuPosition]);
 

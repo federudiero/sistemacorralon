@@ -213,6 +213,20 @@ service cloud.firestore {
         && onlyChanges(['remitoGenerado', 'remitoId', 'updatedAt']);
     }
 
+    function validVentaPagoUpdate(cuentaId) {
+      return canWriteClientes(cuentaId)
+        && request.resource.data.estadoPago in ['pendiente', 'parcial', 'pagado']
+        && onlyChanges([
+          'totalPagado',
+          'saldoPendiente',
+          'estadoPago',
+          'ultimoPagoAt',
+          'ultimoPagoBy',
+          'updatedAt',
+          'updatedBy'
+        ]);
+    }
+
     function validIngresoAnnulUpdate(cuentaId) {
       return canWriteIngresos(cuentaId)
         && resourceFechaAbierta(cuentaId)
@@ -317,7 +331,8 @@ service cloud.firestore {
         allow create: if canWriteVentas(cuentaId) && requestFechaAbierta(cuentaId);
         allow update: if validVentaEntregaUpdate(cuentaId)
           || validVentaAnnulUpdate(cuentaId)
-          || validVentaRemitoLinkUpdate(cuentaId);
+          || validVentaRemitoLinkUpdate(cuentaId)
+          || validVentaPagoUpdate(cuentaId);
         allow delete: if false;
       }
 
@@ -354,6 +369,15 @@ service cloud.firestore {
         allow create: if canWriteCierre(cuentaId);
         allow update: if false;
         allow delete: if canAnnulCierre(cuentaId);
+      }
+
+      match /cuentaCorrienteMovimientos/{docId} {
+        allow read: if canReadGeneral(cuentaId);
+        allow create: if canWriteClientes(cuentaId)
+          && request.resource.data.fechaStr is string
+          && !cajaCerrada(cuentaId, request.resource.data.fechaStr)
+          && request.resource.data.tipo in ['venta', 'pago', 'anulacion_venta'];
+        allow update, delete: if false;
       }
 
       match /{document=**} {

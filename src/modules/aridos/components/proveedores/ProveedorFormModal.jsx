@@ -16,7 +16,7 @@ export default function ProveedorFormModal({ open, initialData, onClose, onSubmi
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-2xl">
-        <h3 className="font-bold text-lg">{initialData ? 'Editar proveedor' : 'Nuevo proveedor'}</h3>
+        <h3 className="font-bold text-lg app-title-text">{initialData ? 'Editar proveedor' : 'Nuevo proveedor'}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
           <label className="form-control w-full"><span className="label-text mb-1">Nombre</span><input className="input input-bordered" value={form.nombre ?? ''} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} disabled={blocked} /></label>
           <label className="form-control w-full"><span className="label-text mb-1">Teléfono</span><input className="input input-bordered" value={form.telefono ?? ''} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} disabled={blocked} /></label>

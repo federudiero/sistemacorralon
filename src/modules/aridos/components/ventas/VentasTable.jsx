@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import {
+  formatCondicionPago,
   formatCurrency,
+  formatDateOnly,
   formatDateTime,
   formatEntregaDisplay,
   formatEntregaEstado,
+  formatEstadoPago,
   formatQuantity,
 } from '../../utils/formatters';
 import EstadoBadge from '../shared/EstadoBadge';
@@ -144,6 +147,12 @@ function VentaCard({
           <span className="mobile-data-label">Envío</span>
           <span className="mobile-data-value">{formatCurrency(item.envioMonto || 0)}</span>
         </div>
+        <div>
+          <span className="mobile-data-label">Pago</span>
+          <span className="mobile-data-value">
+            {formatCondicionPago(item.condicionPago || item.metodoPago)} · {formatEstadoPago(item.estadoPago)}
+          </span>
+        </div>
         <div className="col-span-full">
           <span className="mobile-data-label">Total</span>
           <span className="mobile-data-value strong">{formatCurrency(item.total)}</span>
@@ -166,6 +175,19 @@ function VentaCard({
   );
 }
 
+
+function buildLocalDateFromInput(value) {
+  if (!value) return null;
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function formatSelectedDay(value) {
+  const date = buildLocalDateFromInput(value);
+  return date ? formatDateOnly(date) : 'fecha seleccionada';
+}
+
 function matchesSearch(item, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -176,6 +198,8 @@ function matchesSearch(item, query) {
     item.telefono,
     item.direccion,
     item.metodoPago,
+    item.condicionPago,
+    item.estadoPago,
     formatEntregaEstado(item.entregaEstado),
     formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega),
   ]
@@ -194,6 +218,8 @@ export default function VentasTable({
   canGenerateRemito = true,
   canUpdateEntrega = true,
   processing = false,
+  fechaStr = '',
+  onFechaChange,
 }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
@@ -201,14 +227,26 @@ export default function VentasTable({
   return (
     <div className="page-section">
       <div className="page-section-body ventas-table-body">
-        <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold app-title-text">Ventas registradas</h3>
+            <h3 className="text-lg font-semibold app-title-text">Ventas del día</h3>
             <p className="mt-1 text-sm app-muted-text">
-              Podés buscar, abrir el detalle y marcar si la venta quedó pendiente, entregada o no entregada.
+              Mostrando solo las ventas de {formatSelectedDay(fechaStr)}. Cambiá la fecha para revisar otro día.
             </p>
           </div>
-          <span className="badge-soft">{filteredItems.length} registros</span>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label className="w-full sm:w-auto">
+              <span className="sr-only">Filtrar ventas por fecha</span>
+              <input
+                type="date"
+                className="input input-bordered h-11 w-full sm:w-44"
+                value={fechaStr}
+                onChange={(event) => onFechaChange?.(event.target.value)}
+              />
+            </label>
+            <span className="badge-soft whitespace-nowrap">{filteredItems.length} registros</span>
+          </div>
         </div>
 
         <ListSearchInput
@@ -236,7 +274,7 @@ export default function VentasTable({
               />
             ))
           ) : (
-            <div className="mobile-empty-state">No hay ventas que coincidan con la búsqueda.</div>
+            <div className="mobile-empty-state">No hay ventas para esta fecha o no coinciden con la búsqueda.</div>
           )}
         </div>
 
@@ -252,6 +290,7 @@ export default function VentasTable({
                 <th>Estado entrega</th>
                 <th>Envío</th>
                 <th>Total</th>
+                <th>Pago</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -280,6 +319,17 @@ export default function VentasTable({
                     <td>{formatCurrency(item.envioMonto || 0)}</td>
                     <td>{formatCurrency(item.total)}</td>
                     <td>
+                      <div className="flex flex-col gap-1 text-xs">
+                        <span className="font-medium app-title-text">
+                          {formatCondicionPago(item.condicionPago || item.metodoPago)}
+                        </span>
+                        <span className="app-muted-text">{formatEstadoPago(item.estadoPago)}</span>
+                        {Number(item.saldoPendiente || 0) > 0 ? (
+                          <span className="app-muted-text">Debe {formatCurrency(item.saldoPendiente)}</span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td>
                       <EstadoBadge value={item.estado} />
                     </td>
                     <td>
@@ -296,8 +346,8 @@ export default function VentasTable({
                 ))
               ) : (
                 <tr>
-                  <td colSpan="10" className="text-center app-muted-text">
-                    No hay ventas que coincidan con la búsqueda.
+                  <td colSpan="11" className="text-center app-muted-text">
+                    No hay ventas para esta fecha o no coinciden con la búsqueda.
                   </td>
                 </tr>
               )}

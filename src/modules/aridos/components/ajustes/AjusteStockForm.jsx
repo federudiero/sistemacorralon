@@ -76,7 +76,7 @@ export default function AjusteStockForm({ cuentaId, currentUserEmail, productos 
 
   return (
     <div className="page-section mb-4">
-      <div className="page-section-body space-y-5">
+      <div className="page-section-body space-y-5 pb-24 md:pb-6">
         <div>
           <h2 className="text-lg font-semibold app-title-text">Registrar ajuste</h2>
           <p className="mt-1 text-sm app-soft-text">Podés dejar el ajuste en la fecha operativa correcta y mantener la trazabilidad del motivo.</p>

@@ -2,16 +2,21 @@ import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
 import ClientesTable from '../components/clientes/ClientesTable';
 import ClienteFormModal from '../components/clientes/ClienteFormModal';
+import CuentaCorrientePagoModal from '../components/clientes/CuentaCorrientePagoModal';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
 import useClientes from '../hooks/useClientes';
 import { createCliente, updateCliente } from '../services/clientes.service';
+import { registrarPagoCuentaCorriente } from '../services/cuentaCorriente.service';
 import { ARIDOS_SECTIONS, canWriteSection } from '../utils/permissions';
 
-export default function ClientesPage({ cuentaId, security }) {
+export default function ClientesPage({ cuentaId, currentUserEmail, security }) {
   const { items, loading, error } = useClientes(cuentaId);
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
+  const [clientePago, setClientePago] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [savingPago, setSavingPago] = useState(false);
+  const [errorPago, setErrorPago] = useState('');
   const canWrite = canWriteSection(security?.permissions, ARIDOS_SECTIONS.CLIENTES);
 
   async function handleSubmit(form) {
@@ -25,13 +30,55 @@ export default function ClientesPage({ cuentaId, security }) {
     } finally { setSaving(false); }
   }
 
+
+  async function handleRegistrarPago(form) {
+    if (!canWrite || !clientePago?.id) return;
+    setSavingPago(true);
+    setErrorPago('');
+
+    try {
+      await registrarPagoCuentaCorriente(
+        cuentaId,
+        {
+          ...form,
+          clienteId: clientePago.id,
+          clienteNombre: clientePago.nombre || '',
+        },
+        currentUserEmail,
+      );
+      setClientePago(null);
+    } catch (err) {
+      setErrorPago(err?.message || 'No se pudo registrar el pago.');
+    } finally {
+      setSavingPago(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader title="Clientes" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo cliente</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para alta o edición de clientes." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : <ClientesTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} /> }
+      {errorPago ? <div className="alert alert-error">{errorPago}</div> : null}
+      {loading ? (
+        <div className="loading loading-spinner loading-lg" />
+      ) : (
+        <ClientesTable
+          items={items}
+          canEdit={canWrite}
+          onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined}
+          onRegisterPago={canWrite ? (item) => { setErrorPago(''); setClientePago(item); } : undefined}
+        />
+      )}
       <ClienteFormModal open={open} initialData={selected} onClose={() => { setOpen(false); setSelected(null); }} onSubmit={handleSubmit} loading={saving} disabled={!canWrite} />
+      <CuentaCorrientePagoModal
+        open={Boolean(clientePago)}
+        cliente={clientePago}
+        onClose={() => { setClientePago(null); setErrorPago(''); }}
+        onSubmit={handleRegistrarPago}
+        loading={savingPago}
+        disabled={!canWrite}
+      />
     </div>
   );
 }

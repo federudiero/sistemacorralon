@@ -1,4 +1,4 @@
-import { METODOS_PAGO, MOVIMIENTO_LABELS, MOVIMIENTO_TIPOS, TIPOS_ENTREGA, VEHICULOS_ENVIO, VENTA_ENTREGA_ESTADOS } from './constants';
+import { CONDICIONES_PAGO, ESTADOS_PAGO, METODOS_COBRO, METODOS_PAGO, MOVIMIENTO_LABELS, MOVIMIENTO_TIPOS, TIPOS_ENTREGA, VEHICULOS_ENVIO, VENTA_ENTREGA_ESTADOS } from './constants';
 
 export function formatCurrency(value = 0, currency = 'ARS') {
   return new Intl.NumberFormat('es-AR', {
@@ -128,6 +128,27 @@ function findOptionLabel(options = [], value, fallback = '') {
 
 export function formatMetodoPago(value = '') {
   return findOptionLabel(METODOS_PAGO, value, value || '-');
+}
+
+export function formatMetodoCobro(value = '') {
+  return findOptionLabel(METODOS_COBRO, value, value || '-');
+}
+
+export function formatCondicionPago(value = '') {
+  return findOptionLabel(CONDICIONES_PAGO, value, value || '-');
+}
+
+export function formatEstadoPago(value = '') {
+  switch (value) {
+    case ESTADOS_PAGO.PAGADO:
+      return 'Pagado';
+    case ESTADOS_PAGO.PENDIENTE:
+      return 'Pendiente';
+    case ESTADOS_PAGO.PARCIAL:
+      return 'Parcial';
+    default:
+      return value ? String(value).replaceAll('_', ' ') : '-';
+  }
 }
 
 export function formatTipoEntrega(value = '') {

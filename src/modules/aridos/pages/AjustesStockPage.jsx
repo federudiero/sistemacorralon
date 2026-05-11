@@ -17,7 +17,11 @@ export default function AjustesStockPage({ cuentaId, currentUserEmail, security 
     if (!canAnnul || item?.revertido || item?.esReversion) return;
     const motivo = window.prompt('Motivo de la reversión del ajuste:', 'Reversión manual de ajuste');
     if (motivo == null) return;
-    await anularAjusteStock(cuentaId, item.id, motivo, currentUserEmail);
+    try {
+      await anularAjusteStock(cuentaId, item.id, motivo, currentUserEmail);
+    } catch (err) {
+      alert(err?.message || 'No se pudo anular el ajuste.');
+    }
   }
 
   return (

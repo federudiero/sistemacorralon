@@ -6,7 +6,7 @@ import {
   requirePositiveNumber,
   requireString,
 } from '../utils/validators';
-import { MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS, VENTA_ESTADOS } from '../utils/constants';
+import { ESTADOS_PAGO, MOVIMIENTO_TIPOS, VENTA_ENTREGA_ESTADOS, VENTA_ESTADOS } from '../utils/constants';
 import { buildDateStr, parseInputDate } from '../utils/formatters';
 import { buildStockFields, getStockActual } from '../utils/stock';
 import { subscribeCollection, docRef } from './base';
@@ -31,6 +31,9 @@ function normalizePayload(payload = {}) {
   const envioMonto = Number(payload.tipoEntrega === 'envio' ? payload.envioMonto || 0 : 0);
   const total = subtotal + envioMonto;
   const entregaEstado = payload.entregaEstado || getDefaultEntregaEstado();
+  const condicionPago = payload.condicionPago || (payload.metodoPago === 'cuenta_corriente' ? 'cuenta_corriente' : 'contado');
+  const metodoCobro = condicionPago === 'cuenta_corriente' ? '' : (payload.metodoCobro || payload.metodoPago || 'efectivo');
+  const metodoPago = condicionPago === 'cuenta_corriente' ? 'cuenta_corriente' : metodoCobro;
 
   return {
     fecha,
@@ -49,7 +52,12 @@ function normalizePayload(payload = {}) {
     envioMonto,
     total,
     tipoEntrega: payload.tipoEntrega || 'retiro',
-    metodoPago: payload.metodoPago || 'efectivo',
+    condicionPago,
+    metodoCobro,
+    metodoPago,
+    estadoPago: condicionPago === 'cuenta_corriente' ? ESTADOS_PAGO.PENDIENTE : ESTADOS_PAGO.PAGADO,
+    totalPagado: condicionPago === 'cuenta_corriente' ? 0 : total,
+    saldoPendiente: condicionPago === 'cuenta_corriente' ? total : 0,
     vehiculoEntrega:
       payload.vehiculoEntrega || (payload.tipoEntrega === 'envio' ? 'envio' : 'retiro_cliente'),
     detalleEntrega: String(payload.detalleEntrega || '').trim(),
@@ -66,8 +74,10 @@ async function createVenta(cuentaId, payload, userEmail) {
   const data = normalizePayload({ ...payload, userEmail });
 
   const productoRef = doc(db, `cuentas/${cuentaId}/productos/${data.productoId}`);
+  const clienteRef = data.clienteId ? doc(db, `cuentas/${cuentaId}/clientes/${data.clienteId}`) : null;
   const ventasRef = collection(db, `cuentas/${cuentaId}/ventas`);
   const movimientosRef = collection(db, `cuentas/${cuentaId}/movimientosStock`);
+  const cuentaCorrienteMovimientosRef = collection(db, `cuentas/${cuentaId}/cuentaCorrienteMovimientos`);
   const cierreRef = docRef(cuentaId, 'cierresCaja', data.fechaStr);
   const ventaDoc = doc(ventasRef);
 
@@ -80,6 +90,21 @@ async function createVenta(cuentaId, payload, userEmail) {
     const productoSnap = await tx.get(productoRef);
     if (!productoSnap.exists()) throw new Error('Producto inexistente.');
 
+    const clienteSnap = clienteRef ? await tx.get(clienteRef) : null;
+    const cliente = clienteSnap?.exists?.() ? clienteSnap.data() : null;
+
+    if (data.condicionPago === 'cuenta_corriente') {
+      if (!clienteRef || !clienteSnap?.exists?.()) {
+        throw new Error('Para vender por cuenta corriente tenés que seleccionar un cliente registrado.');
+      }
+      if (cliente?.esGenerico) {
+        throw new Error('No se puede usar cuenta corriente con el cliente genérico.');
+      }
+      if (cliente?.activo === false) {
+        throw new Error('No se puede usar cuenta corriente con un cliente inactivo.');
+      }
+    }
+
     const producto = productoSnap.data();
     const stockActual = getStockActual(producto);
     const costoUnitarioSnapshot = Number(producto.costoActual ?? producto.costoPromedio ?? 0);
@@ -87,16 +112,63 @@ async function createVenta(cuentaId, payload, userEmail) {
 
     assertStockAvailable(stockActual, data.cantidad);
 
+    const saldoAnteriorCuentaCorriente = Number(cliente?.saldoCuentaCorriente || 0);
+    const saldoPosteriorCuentaCorriente = data.condicionPago === 'cuenta_corriente'
+      ? saldoAnteriorCuentaCorriente + Number(data.total || 0)
+      : saldoAnteriorCuentaCorriente;
+    const limiteCuentaCorriente = Number(cliente?.limiteCuentaCorriente || 0);
+    const cuentaCorrienteSobreLimite = data.condicionPago === 'cuenta_corriente'
+      && limiteCuentaCorriente > 0
+      && saldoPosteriorCuentaCorriente > limiteCuentaCorriente;
+
     tx.set(ventaDoc, {
       ...data,
       costoUnitarioSnapshot,
       costoTotalSnapshot,
       precioListaSnapshot: Number(producto.precioVenta ?? data.precioUnitario ?? 0),
+      saldoAnteriorCuentaCorriente: data.condicionPago === 'cuenta_corriente'
+        ? saldoAnteriorCuentaCorriente
+        : null,
+      saldoPosteriorCuentaCorriente: data.condicionPago === 'cuenta_corriente'
+        ? saldoPosteriorCuentaCorriente
+        : null,
+      limiteCuentaCorrienteSnapshot: data.condicionPago === 'cuenta_corriente'
+        ? limiteCuentaCorriente
+        : null,
+      cuentaCorrienteSobreLimite,
       createdAt: serverTimestamp(),
       createdBy: userEmail || null,
       entregaMarcadaAt: null,
       entregaMarcadaBy: null,
     });
+
+    if (data.condicionPago === 'cuenta_corriente' && clienteRef) {
+      tx.update(clienteRef, {
+        saldoCuentaCorriente: saldoPosteriorCuentaCorriente,
+        updatedAt: serverTimestamp(),
+      });
+
+      const cuentaCorrienteMovDoc = doc(cuentaCorrienteMovimientosRef);
+      tx.set(cuentaCorrienteMovDoc, {
+        clienteId: data.clienteId,
+        clienteNombre: data.clienteNombre || cliente?.nombre || '',
+        tipo: 'venta',
+        ventaId: ventaDoc.id,
+        debe: Number(data.total || 0),
+        haber: 0,
+        monto: Number(data.total || 0),
+        fecha: data.fecha,
+        fechaStr: data.fechaStr,
+        metodoCobro: '',
+        observaciones: data.observaciones || '',
+        saldoAnterior: saldoAnteriorCuentaCorriente,
+        saldoPosterior: saldoPosteriorCuentaCorriente,
+        limiteCuentaCorrienteSnapshot: limiteCuentaCorriente,
+        cuentaCorrienteSobreLimite,
+        createdAt: serverTimestamp(),
+        createdBy: userEmail || null,
+      });
+    }
 
     tx.update(productoRef, {
       ...buildStockFields(producto.unidadStock || producto.unidad || data.unidadStock, stockActual - data.cantidad),
@@ -198,8 +270,18 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
     }
 
     const productoRef = doc(db, `cuentas/${cuentaId}/productos/${venta.productoId}`);
+    const clienteRef = venta.condicionPago === 'cuenta_corriente' && venta.clienteId
+      ? doc(db, `cuentas/${cuentaId}/clientes/${venta.clienteId}`)
+      : null;
     const productoSnap = await tx.get(productoRef);
     if (!productoSnap.exists()) throw new Error('Producto inexistente.');
+
+    const clienteSnap = clienteRef ? await tx.get(clienteRef) : null;
+    const cliente = clienteSnap?.exists?.() ? clienteSnap.data() : null;
+
+    if (venta.condicionPago === 'cuenta_corriente' && Number(venta.totalPagado || 0) > 0) {
+      throw new Error('No se puede anular una venta de cuenta corriente que ya tiene pagos aplicados.');
+    }
 
     const producto = productoSnap.data();
     const stockActual = getStockActual(producto);
@@ -217,6 +299,36 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
       updatedAt: serverTimestamp(),
       updatedBy: userEmail || null,
     });
+
+    if (venta.condicionPago === 'cuenta_corriente' && clienteRef && cliente) {
+      const saldoAnterior = Number(cliente.saldoCuentaCorriente || 0);
+      const montoARevertir = Number(venta.saldoPendiente ?? venta.total ?? 0);
+      const saldoPosterior = Math.max(saldoAnterior - montoARevertir, 0);
+
+      tx.update(clienteRef, {
+        saldoCuentaCorriente: saldoPosterior,
+        updatedAt: serverTimestamp(),
+      });
+
+      const cuentaCorrienteMovDoc = doc(collection(db, `cuentas/${cuentaId}/cuentaCorrienteMovimientos`));
+      tx.set(cuentaCorrienteMovDoc, {
+        clienteId: venta.clienteId,
+        clienteNombre: venta.clienteNombre || cliente.nombre || '',
+        tipo: 'anulacion_venta',
+        ventaId,
+        debe: 0,
+        haber: montoARevertir,
+        monto: montoARevertir,
+        fecha: new Date(),
+        fechaStr: venta.fechaStr,
+        metodoCobro: '',
+        observaciones: String(motivo || '').trim(),
+        saldoAnterior,
+        saldoPosterior,
+        createdAt: serverTimestamp(),
+        createdBy: userEmail || null,
+      });
+    }
 
     const movDoc = doc(movimientosRef);
     tx.set(movDoc, {
@@ -241,9 +353,26 @@ async function anularVenta(cuentaId, ventaId, motivo, userEmail) {
   });
 }
 
-function subscribeVentas(cuentaId, filters, callback, onError) {
-  return subscribeCollection(cuentaId, 'ventas', callback, {
-    orderBy: [{ field: 'fecha', direction: 'desc' }],
+
+function getVentaTime(item = {}) {
+  const raw = item.fecha;
+  const date = raw?.toDate ? raw.toDate() : new Date(raw || 0);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function subscribeVentas(cuentaId, filters = {}, callback, onError) {
+  const where = [];
+  if (filters?.fechaStr) {
+    where.push({ field: 'fechaStr', op: '==', value: filters.fechaStr });
+  }
+
+  const handleItems = (items = []) => {
+    callback([...items].sort((a, b) => getVentaTime(b) - getVentaTime(a)));
+  };
+
+  return subscribeCollection(cuentaId, 'ventas', handleItems, {
+    where,
+    orderBy: where.length ? [] : [{ field: 'fecha', direction: 'desc' }],
     limit: filters?.limit || 100,
   }, onError);
 }

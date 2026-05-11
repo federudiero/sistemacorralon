@@ -26,6 +26,8 @@ export default function IngresosCamionPage({ cuentaId, currentUserEmail, securit
     try {
       await anularIngresoCamion(cuentaId, item.id, 'Anulación manual desde reposición', currentUserEmail);
       if (selected?.id === item.id) setSelected(null);
+    } catch (err) {
+      alert(err?.message || 'No se pudo anular la reposición.');
     } finally {
       setProcessing(false);
     }

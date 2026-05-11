@@ -12,7 +12,17 @@ function PencilIcon() {
   );
 }
 
-function ClienteCard({ item, onEdit, canEdit }) {
+function CashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="6.5" width="17" height="11" rx="2" />
+      <circle cx="12" cy="12" r="2.2" />
+      <path d="M6.8 9.2h.01M17.2 14.8h.01" />
+    </svg>
+  );
+}
+
+function ClienteCard({ item, onEdit, onRegisterPago, canEdit }) {
   return (
     <div className="mobile-data-card">
       <div className="mobile-data-card-header">
@@ -49,7 +59,14 @@ function ClienteCard({ item, onEdit, canEdit }) {
       </div>
 
       <div className="mobile-card-actions">
-        {canEdit ? <UiIconButton size="sm" label="Editar cliente" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} className="flex-1" /> : <span className="text-xs app-muted-text">Solo lectura</span>}
+        {canEdit ? (
+          <>
+            <UiIconButton size="sm" label="Editar cliente" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} />
+            {Number(item.saldoCuentaCorriente || 0) > 0 && !item.esGenerico ? (
+              <UiIconButton size="sm" label="Registrar pago" tone="secondary" icon={<CashIcon />} onClick={() => onRegisterPago?.(item)} />
+            ) : null}
+          </>
+        ) : <span className="text-xs app-muted-text">Solo lectura</span>}
       </div>
     </div>
   );
@@ -61,7 +78,7 @@ function matchesSearch(item, query) {
   return [item.nombre, item.alias, item.telefono, item.direccion, item.cuitDni].join(' ').toLowerCase().includes(q);
 }
 
-export default function ClientesTable({ items = [], onEdit, canEdit = true }) {
+export default function ClientesTable({ items = [], onEdit, onRegisterPago, canEdit = true }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
 
@@ -78,7 +95,7 @@ export default function ClientesTable({ items = [], onEdit, canEdit = true }) {
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre, alias, teléfono o documento" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <ClienteCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay clientes cargados.</div>}
+          {filteredItems.length ? filteredItems.map((item) => <ClienteCard key={item.id} item={item} onEdit={onEdit} onRegisterPago={onRegisterPago} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay clientes cargados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
@@ -97,7 +114,18 @@ export default function ClientesTable({ items = [], onEdit, canEdit = true }) {
                   <td>{formatCurrency(item.saldoCuentaCorriente)}</td>
                   <td>{item.esGenerico ? <span className="badge badge-info">Genérico</span> : <span className="badge badge-ghost">Regular</span>}</td>
                   <td><span className={`badge ${item.activo === false ? 'badge-error' : 'badge-success'}`}>{item.activo === false ? 'No' : 'Sí'}</span></td>
-                  <td><div className="table-action-cell">{canEdit ? <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} /> : <span className="text-xs app-muted-text">Solo lectura</span>}</div></td>
+                  <td>
+                    <div className="table-action-cell">
+                      {canEdit ? (
+                        <>
+                          <UiIconButton size="sm" label="Editar" tone="neutral" icon={<PencilIcon />} onClick={() => onEdit?.(item)} />
+                          {Number(item.saldoCuentaCorriente || 0) > 0 && !item.esGenerico ? (
+                            <UiIconButton size="sm" label="Registrar pago" tone="secondary" icon={<CashIcon />} onClick={() => onRegisterPago?.(item)} />
+                          ) : null}
+                        </>
+                      ) : <span className="text-xs app-muted-text">Solo lectura</span>}
+                    </div>
+                  </td>
                 </tr>
               )) : <tr><td colSpan="9" className="text-center app-muted-text">No hay clientes cargados.</td></tr>}
             </tbody>

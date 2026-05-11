@@ -18,8 +18,8 @@ export default function ConfirmActionModal({ open, title = 'Confirmar', descript
   return (
     <dialog className="modal modal-open">
       <div className="modal-box w-11/12 max-w-lg">
-        <h3 className="font-bold text-lg">{title}</h3>
-        <p className="py-3">{description}</p>
+        <h3 className="font-bold text-lg app-title-text">{title}</h3>
+        <p className="py-3 app-muted-text">{description}</p>
         <div className="modal-action">
           <button className="btn" onClick={handleClose} disabled={loading}>{cancelLabel}</button>
           <button className="btn btn-error" onClick={handleConfirm} disabled={loading}>{loading ? 'Procesando...' : confirmLabel}</button>

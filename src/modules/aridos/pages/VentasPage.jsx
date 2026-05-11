@@ -12,18 +12,24 @@ import useProductos from '../hooks/useProductos';
 import useClientes from '../hooks/useClientes';
 import { anularVenta, updateVentaEntregaEstado } from '../services/ventas.service';
 import { ARIDOS_SECTIONS, canAnnulSection, canWriteSection } from '../utils/permissions';
+import { toInputDate } from '../utils/formatters';
 
 export default function VentasPage({ cuentaId, currentUserEmail, security }) {
   const [selected, setSelected] = useState(null);
   const [ventaAnular, setVentaAnular] = useState(null);
   const [ventaRemito, setVentaRemito] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const { items, loading, error } = useVentas(cuentaId, { limit: 100 });
+  const [fechaVentas, setFechaVentas] = useState(() => toInputDate(new Date()));
+  const { items, loading, error } = useVentas(cuentaId, { fechaStr: fechaVentas, limit: 250 });
   const { items: productos } = useProductos(cuentaId);
   const { items: clientes } = useClientes(cuentaId);
   const canWrite = canWriteSection(security?.permissions, ARIDOS_SECTIONS.VENTAS);
   const canAnnul = canAnnulSection(security?.permissions, ARIDOS_SECTIONS.VENTAS);
   const canWriteRemitos = canWriteSection(security?.permissions, ARIDOS_SECTIONS.REMITOS);
+
+  function handleFechaVentasChange(nextFecha) {
+    setFechaVentas(nextFecha || toInputDate(new Date()));
+  }
 
   async function handleAnular() {
     if (!ventaAnular || !canAnnul) return;
@@ -54,10 +60,18 @@ export default function VentasPage({ cuentaId, currentUserEmail, security }) {
     <div className="space-y-4">
       <PageHeader
         title="Ventas"
-actions={canWriteRemitos ? <Link className="btn btn-outline h-12" to="/aridos/remitos">Ir a remitos</Link> : null}
+        actions={canWriteRemitos ? <Link className="btn btn-outline h-12" to="/aridos/remitos">Ir a remitos</Link> : null}
       />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para cargar ventas nuevas." /> : null}
-      <VentaForm cuentaId={cuentaId} currentUserEmail={currentUserEmail} productos={productos} clientes={clientes} disabled={!canWrite} />
+      <VentaForm
+        cuentaId={cuentaId}
+        currentUserEmail={currentUserEmail}
+        productos={productos}
+        clientes={clientes}
+        disabled={!canWrite}
+        initialFecha={fechaVentas}
+        onFechaChange={handleFechaVentasChange}
+      />
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? (
         <div className="loading loading-spinner loading-lg" />
@@ -72,6 +86,8 @@ actions={canWriteRemitos ? <Link className="btn btn-outline h-12" to="/aridos/re
           canGenerateRemito={canWriteRemitos}
           canUpdateEntrega={canWrite}
           processing={processing}
+          fechaStr={fechaVentas}
+          onFechaChange={handleFechaVentasChange}
         />
       )}
       <VentaDetalleModal
@@ -87,10 +103,10 @@ actions={canWriteRemitos ? <Link className="btn btn-outline h-12" to="/aridos/re
         onConfirm={handleAnular}
         title="Anular venta"
         description={ventaAnular ? `Se va a anular la venta de ${ventaAnular.clienteNombre || 'cliente'} por ${ventaAnular.productoNombre || 'producto'}. El stock se reintegrará automáticamente.` : ''}
-        confirmText={processing ? 'Anulando...' : 'Anular venta'}
+        confirmLabel={processing ? 'Anulando...' : 'Anular venta'}
         loading={processing}
       />
-      <RemitoFormModal open={Boolean(ventaRemito)} initialVenta={ventaRemito} onClose={() => setVentaRemito(null)} cuentaId={cuentaId} currentUserEmail={currentUserEmail} />
+      <RemitoFormModal open={Boolean(ventaRemito)} venta={ventaRemito} onClose={() => setVentaRemito(null)} cuentaId={cuentaId} currentUserEmail={currentUserEmail} />
     </div>
   );
 }

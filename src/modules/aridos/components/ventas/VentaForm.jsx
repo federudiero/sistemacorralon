@@ -6,7 +6,8 @@ import AppSelect from '../shared/AppSelect';
 import NumericInputM3 from '../shared/NumericInputM3';
 import {
   CLIENTE_GENERICO_NOMBRE,
-  METODOS_PAGO,
+  CONDICIONES_PAGO,
+  METODOS_COBRO,
   TIPOS_ENTREGA,
 } from '../../utils/constants';
 import {
@@ -21,7 +22,9 @@ const buildInitialForm = (fecha = toInputDate(new Date())) => ({
   productoId: '',
   cantidad: '',
   precioUnitario: '',
+  condicionPago: 'contado',
   metodoPago: 'efectivo',
+  metodoCobro: 'efectivo',
   tipoEntrega: 'retiro',
   vehiculoEntrega: 'retiro_cliente',
   envioMonto: '',
@@ -36,8 +39,10 @@ export default function VentaForm({
   clientes = [],
   onSaved,
   disabled = false,
+  initialFecha = toInputDate(new Date()),
+  onFechaChange,
 }) {
-  const [form, setForm] = useState(() => buildInitialForm());
+  const [form, setForm] = useState(() => buildInitialForm(initialFecha));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [cajaCerrada, setCajaCerrada] = useState(false);
@@ -51,7 +56,13 @@ export default function VentaForm({
     [clientes],
   );
 
-  const fechaOperativa = form.fecha || toInputDate(new Date());
+  const fechaOperativa = form.fecha || initialFecha || toInputDate(new Date());
+
+  useEffect(() => {
+    if (initialFecha && initialFecha !== form.fecha) {
+      setForm((prev) => ({ ...prev, fecha: initialFecha }));
+    }
+  }, [initialFecha, form.fecha]);
 
   useEffect(() => {
     if (!form.clienteId && clienteGenerico?.id) {
@@ -97,8 +108,24 @@ export default function VentaForm({
   const subtotal = Number(form.cantidad || 0) * Number(form.precioUnitario || 0);
   const envioMonto = form.tipoEntrega === 'envio' ? Number(form.envioMonto || 0) : 0;
   const totalFinal = subtotal + envioMonto;
+  const isCuentaCorriente = form.condicionPago === 'cuenta_corriente';
+  const saldoActualCuentaCorriente = Number(cliente?.saldoCuentaCorriente || 0);
+  const limiteCuentaCorriente = Number(cliente?.limiteCuentaCorriente || 0);
+  const nuevoSaldoCuentaCorriente = saldoActualCuentaCorriente + totalFinal;
+  const isClienteGenerico = Boolean(cliente?.esGenerico || cliente?.nombre === CLIENTE_GENERICO_NOMBRE);
+  const cuentaCorrienteBloqueada = isCuentaCorriente && (!cliente?.id || isClienteGenerico);
+  const cuentaCorrienteSobreLimite = isCuentaCorriente
+    && limiteCuentaCorriente > 0
+    && nuevoSaldoCuentaCorriente > limiteCuentaCorriente;
   const blocked = saving || disabled || cajaCerrada || checkingClose;
+  const submitBlocked = blocked || cuentaCorrienteBloqueada;
   const isEnvio = form.tipoEntrega === 'envio';
+
+  function handleFechaChange(value) {
+    const nextFecha = value || toInputDate(new Date());
+    setForm((prev) => ({ ...prev, fecha: nextFecha }));
+    onFechaChange?.(nextFecha);
+  }
 
   function updateEntrega(tipoEntrega) {
     setForm((prev) => ({
@@ -111,7 +138,7 @@ export default function VentaForm({
   }
 
   async function handleSubmit() {
-    if (blocked) return;
+    if (submitBlocked) return;
 
     setSaving(true);
     setError('');
@@ -183,7 +210,7 @@ export default function VentaForm({
               type="date"
               className="h-12 input input-bordered"
               value={fechaOperativa}
-              onChange={(e) => setForm((prev) => ({ ...prev, fecha: e.target.value }))}
+              onChange={(e) => handleFechaChange(e.target.value)}
               disabled={saving || disabled}
             />
           </label>
@@ -226,6 +253,25 @@ export default function VentaForm({
             </div>
           ) : null}
 
+          {isCuentaCorriente ? (
+            <div className={`form-grid-wide alert ${cuentaCorrienteBloqueada ? 'alert-error' : cuentaCorrienteSobreLimite ? 'alert-warning' : 'alert-info'}`}>
+              {cuentaCorrienteBloqueada ? (
+                <span>Seleccioná un cliente registrado. La cuenta corriente no se permite con consumidor final o cliente genérico.</span>
+              ) : (
+                <div className="w-full">
+                  <div className="font-semibold">Resumen de cuenta corriente</div>
+                  <div className="mt-1 text-sm">
+                    Saldo actual: {formatCurrency(saldoActualCuentaCorriente)} · Nuevo saldo: {formatCurrency(nuevoSaldoCuentaCorriente)}
+                    {limiteCuentaCorriente > 0 ? ` · Límite: ${formatCurrency(limiteCuentaCorriente)}` : ''}
+                  </div>
+                  {cuentaCorrienteSobreLimite ? (
+                    <div className="mt-1 text-sm font-semibold">El nuevo saldo supera el límite configurado para este cliente.</div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="form-section-divider form-grid-wide">
             <span className="form-section-divider__label">Precio y pago</span>
             <span className="form-section-divider__line" />
@@ -252,12 +298,37 @@ export default function VentaForm({
           </label>
 
           <AppSelect
-            label="Método de pago"
-            options={METODOS_PAGO}
-            value={form.metodoPago}
-            onChange={(nextValue) => setForm((prev) => ({ ...prev, metodoPago: nextValue }))}
+            label="Condición de pago"
+            options={CONDICIONES_PAGO}
+            value={form.condicionPago}
+            onChange={(nextValue) => setForm((prev) => ({
+              ...prev,
+              condicionPago: nextValue,
+              metodoPago: nextValue === 'cuenta_corriente' ? 'cuenta_corriente' : (prev.metodoCobro || 'efectivo'),
+            }))}
             disabled={blocked}
           />
+
+          {!isCuentaCorriente ? (
+            <AppSelect
+              label="Método de cobro"
+              options={METODOS_COBRO}
+              value={form.metodoCobro}
+              onChange={(nextValue) => setForm((prev) => ({
+                ...prev,
+                metodoCobro: nextValue,
+                metodoPago: nextValue,
+              }))}
+              disabled={blocked}
+            />
+          ) : (
+            <div className="app-soft-panel rounded-2xl border px-4 py-3">
+              <div className="field-label">Cuenta corriente</div>
+              <div className="mt-1 text-sm app-soft-text">
+                La venta descuenta stock, pero no entra como caja cobrada hasta registrar el pago del cliente.
+              </div>
+            </div>
+          )}
 
           <div className="form-section-divider form-grid-wide">
             <span className="form-section-divider__label">Entrega</span>
@@ -322,7 +393,7 @@ export default function VentaForm({
               {subtotal ? `Subtotal ${formatCurrency(subtotal)}${isEnvio ? ` + envío ${formatCurrency(envioMonto)}` : ' · retiro'}` : 'Completá producto, cantidad y precio'}
             </div>
           </div>
-          <button className="btn btn-primary sales-submit-bar__button" onClick={handleSubmit} disabled={blocked}>
+          <button className="btn btn-primary sales-submit-bar__button" onClick={handleSubmit} disabled={submitBlocked}>
             {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Guardar venta'}
           </button>
         </div>
@@ -337,7 +408,7 @@ export default function VentaForm({
           </div>
 
           <div className="form-actions !border-0 !pt-0">
-            <button className="btn btn-primary h-12 px-6" onClick={handleSubmit} disabled={blocked}>
+            <button className="btn btn-primary h-12 px-6" onClick={handleSubmit} disabled={submitBlocked}>
               {saving ? 'Guardando...' : cajaCerrada ? 'Día cerrado' : 'Registrar venta'}
             </button>
           </div>

@@ -1,8 +1,10 @@
 import {
+  formatCondicionPago,
   formatCurrency,
   formatDateTime,
   formatEntregaDisplay,
   formatEntregaEstado,
+  formatEstadoPago,
   formatMetodoPago,
   formatQuantity,
 } from '../../utils/formatters';
@@ -41,7 +43,12 @@ export default function VentaDetalleModal({ item, open, onClose, onSetEntrega, p
             <p><b>Subtotal:</b> {formatCurrency(item.subtotal || item.total)}</p>
             <p><b>Envío:</b> {formatCurrency(item.envioMonto || 0)}</p>
             <p><b>Total:</b> {formatCurrency(item.total)}</p>
-            <p><b>Método de pago:</b> {formatMetodoPago(item.metodoPago)}</p>
+            <p><b>Condición de pago:</b> {formatCondicionPago(item.condicionPago || item.metodoPago)}</p>
+            <p><b>Método de cobro:</b> {formatMetodoPago(item.metodoCobro || item.metodoPago)}</p>
+            <p><b>Estado de pago:</b> {formatEstadoPago(item.estadoPago)}</p>
+            {Number(item.saldoPendiente || 0) > 0 ? (
+              <p><b>Saldo pendiente:</b> {formatCurrency(item.saldoPendiente)}</p>
+            ) : null}
             <p><b>Tipo de entrega:</b> {formatEntregaDisplay(item.tipoEntrega, item.vehiculoEntrega)}</p>
             <p><b>Estado de entrega:</b> {formatEntregaEstado(item.entregaEstado)}</p>
             <p><b>Detalle:</b> {item.detalleEntrega || '-'}</p>
@@ -54,7 +61,7 @@ export default function VentaDetalleModal({ item, open, onClose, onSetEntrega, p
         </div>
 
         {canManageEntrega ? (
-          <div className="p-4 mt-4 border rounded-2xl border-base-300/70 bg-base-200/40">
+          <div className="p-4 mt-4 border rounded-2xl app-soft-panel">
             <div className="text-sm font-semibold app-title-text">Actualizar entrega</div>
             <p className="mt-1 text-sm app-muted-text">El cierre diario solo toma ventas marcadas como entregadas. Si todavía no salió o no se concretó, dejala pendiente o no entregada.</p>
             <div className="mt-3">

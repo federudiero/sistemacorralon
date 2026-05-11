@@ -58,6 +58,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    end={item.to === '/aridos'}
                     onClick={onClose}
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                   >

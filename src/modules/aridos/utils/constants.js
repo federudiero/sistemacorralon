@@ -78,13 +78,28 @@ export const REMITO_ESTADOS = {
   CANCELADO: 'cancelado',
 };
 
-export const METODOS_PAGO = [
+export const CONDICIONES_PAGO = [
+  { value: 'contado', label: 'Contado' },
+  { value: 'cuenta_corriente', label: 'Cuenta corriente' },
+];
+
+export const ESTADOS_PAGO = {
+  PAGADO: 'pagado',
+  PENDIENTE: 'pendiente',
+  PARCIAL: 'parcial',
+};
+
+export const METODOS_COBRO = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
   { value: 'debito', label: 'Débito' },
   { value: 'credito', label: 'Crédito' },
-  { value: 'cuenta_corriente', label: 'Cuenta corriente' },
   { value: 'mixto', label: 'Mixto' },
+];
+
+export const METODOS_PAGO = [
+  ...METODOS_COBRO,
+  { value: 'cuenta_corriente', label: 'Cuenta corriente' },
 ];
 
 export const TIPOS_ENTREGA = [

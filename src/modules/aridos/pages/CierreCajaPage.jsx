@@ -7,7 +7,7 @@ import {
   getResumenCierreCaja,
   getUltimosCierresCaja,
 } from '../services/cierreCaja.service';
-import { formatCurrency, toInputDate } from '../utils/formatters';
+import { formatCondicionPago, formatCurrency, formatEstadoPago, formatMetodoCobro, toInputDate } from '../utils/formatters';
 import EstadoBadge from '../components/shared/EstadoBadge';
 import AppSelect from '../components/shared/AppSelect';
 import { ARIDOS_SECTIONS, canAnnulSection, canWriteSection } from '../utils/permissions';
@@ -57,6 +57,14 @@ function KpiMetric({ title, value, subtitle, isMoney = false }) {
   );
 }
 
+function formatPagoVentaCierre(item = {}) {
+  if (item.condicionPago === 'cuenta_corriente' || item.metodoPago === 'cuenta_corriente') {
+    return `${formatCondicionPago('cuenta_corriente')} · ${formatEstadoPago(item.estadoPago)}`;
+  }
+
+  return formatMetodoCobro(item.metodoCobro || item.metodoPago || 'sin_definir');
+}
+
 function VentaCierreCard({ item }) {
   return (
     <div className="mobile-data-card">
@@ -66,7 +74,7 @@ function VentaCierreCard({ item }) {
           <div className="mobile-data-card-subtitle">{item.productoNombre || 'Producto'}</div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="badge-soft">{item.metodoPago || '-'}</span>
+          <span className="badge-soft">{formatPagoVentaCierre(item)}</span>
           <EstadoBadge value={item.entregaEstado} />
         </div>
       </div>
@@ -78,7 +86,7 @@ function VentaCierreCard({ item }) {
         </div>
         <div>
           <span className="mobile-data-label">Pago</span>
-          <span className="mobile-data-value">{item.metodoPago || '-'}</span>
+          <span className="mobile-data-value">{formatPagoVentaCierre(item)}</span>
         </div>
       </div>
     </div>
@@ -98,12 +106,12 @@ function HistorialCierreCard({ item }) {
 
       <div className="mobile-data-grid">
         <div>
-          <span className="mobile-data-label">Total</span>
-          <span className="mobile-data-value strong">{formatCurrency(item.resumen?.totalVentas || 0)}</span>
+          <span className="mobile-data-label">Caja real</span>
+          <span className="mobile-data-value strong">{formatCurrency(item.resumen?.totalCajaReal ?? item.resumen?.totalVentas ?? 0)}</span>
         </div>
         <div>
-          <span className="mobile-data-label">Costo</span>
-          <span className="mobile-data-value">{formatCurrency(item.resumen?.totalCostoVentas || 0)}</span>
+          <span className="mobile-data-label">Facturado</span>
+          <span className="mobile-data-value">{formatCurrency(item.resumen?.totalVentas || 0)}</span>
         </div>
         <div>
           <span className="mobile-data-label">Margen</span>
@@ -220,19 +228,17 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
         <div className="loading loading-spinner loading-lg" />
       ) : data ? (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-            <KpiMetric title="Total entregado" value={data.resumen.totalVentas} isMoney />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <KpiMetric title="Caja real del día" value={data.resumen.totalCajaReal || 0} isMoney />
+            <KpiMetric title="Facturado entregado" value={data.resumen.totalVentas} isMoney />
+            <KpiMetric title="Cuenta corriente generada" value={data.resumen.totalCuentaCorrienteGenerada || 0} isMoney />
+            <KpiMetric title="Cobros de cuenta corriente" value={data.resumen.totalCobrosCuentaCorriente || 0} isMoney />
             <KpiMetric title="Costo vendido" value={data.resumen.totalCostoVentas || 0} isMoney />
             <KpiMetric title="Margen bruto" value={data.resumen.totalMargenBruto || 0} isMoney />
             <KpiMetric
               title="Pendientes"
               value={data.resumen.cantidadPendientes || 0}
               subtitle={formatCurrency(data.resumen.totalPendienteEntrega || 0)}
-            />
-            <KpiMetric
-              title="No entregadas"
-              value={data.resumen.cantidadNoEntregadas || 0}
-              subtitle={formatCurrency(data.resumen.totalNoEntregado || 0)}
             />
             <KpiMetric
               title="Estado"
@@ -299,11 +305,11 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="p-4 border app-soft-panel rounded-2xl">
                   <div className="mb-3 text-sm font-semibold app-title-text">
-                    Totales por forma de pago
+                    Caja real por forma de cobro
                   </div>
                   <div className="space-y-2">
-                    {Object.keys(data.resumen.porMetodoPago).length ? (
-                      Object.entries(data.resumen.porMetodoPago).map(([key, value]) => (
+                    {Object.keys(data.resumen.porMetodoPagoCobrado || data.resumen.porMetodoPago || {}).length ? (
+                      Object.entries(data.resumen.porMetodoPagoCobrado || data.resumen.porMetodoPago || {}).map(([key, value]) => (
                         <div
                           key={key}
                           className="flex items-center justify-between gap-3 text-sm"
@@ -318,9 +324,35 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                       ))
                     ) : (
                       <div className="text-sm app-muted-text">
-                        Sin ventas entregadas para la fecha.
+                        Sin cobros reales para la fecha.
                       </div>
                     )}
+                  </div>
+                </div>
+
+                <div className="p-4 border app-soft-panel rounded-2xl">
+                  <div className="mb-3 text-sm font-semibold app-title-text">
+                    Cuenta corriente
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="app-soft-text">Ventas fiadas del día</span>
+                      <span className="font-semibold shrink-0 app-title-text">
+                        {formatCurrency(data.resumen.totalCuentaCorrienteGenerada || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="app-soft-text">Cobros recibidos</span>
+                      <span className="font-semibold shrink-0 app-title-text">
+                        {formatCurrency(data.resumen.totalCobrosCuentaCorriente || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="app-soft-text">Caja contado</span>
+                      <span className="font-semibold shrink-0 app-title-text">
+                        {formatCurrency(data.resumen.totalCobradoContado || 0)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -418,7 +450,7 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                             <td>{item.clienteNombre}</td>
                             <td>{item.productoNombre}</td>
                             <td>{formatCurrency(item.total)}</td>
-                            <td>{item.metodoPago}</td>
+                            <td>{formatPagoVentaCierre(item)}</td>
                             <td>
                               <EstadoBadge value={item.entregaEstado} />
                             </td>
@@ -483,8 +515,9 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                         <thead>
                           <tr>
                             <th>Fecha</th>
-                            <th>Total</th>
-                            <th>Costo</th>
+                            <th>Caja real</th>
+                            <th>Facturado</th>
+                            <th>Cuenta corriente</th>
                             <th>Margen</th>
                             <th>Operaciones</th>
                             <th>Usuario</th>
@@ -495,8 +528,9 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                             filteredHistory.map((item) => (
                               <tr key={item.id}>
                                 <td>{item.fechaStr}</td>
+                                <td>{formatCurrency(item.resumen?.totalCajaReal ?? item.resumen?.totalVentas ?? 0)}</td>
                                 <td>{formatCurrency(item.resumen?.totalVentas || 0)}</td>
-                                <td>{formatCurrency(item.resumen?.totalCostoVentas || 0)}</td>
+                                <td>{formatCurrency(item.resumen?.totalCuentaCorrienteGenerada || 0)}</td>
                                 <td>{formatCurrency(item.resumen?.totalMargenBruto || 0)}</td>
                                 <td>{item.resumen?.cantidadOperaciones || 0}</td>
                                 <td>{item.closedBy || '-'}</td>
