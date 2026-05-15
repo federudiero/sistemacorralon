@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { describeProductoUnidad, formatCurrency, formatQuantity } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function PencilIcon() {
@@ -49,6 +51,8 @@ function matchesSearch(item, query) {
 export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -63,14 +67,14 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre o categoría" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <ProductoCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay productos cargados.</div>}
+          {filteredItems.length ? displayItems.map((item) => <ProductoCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay productos cargados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Nombre</th><th>Categoría</th><th>Unidad</th><th>Precio venta</th><th>Costo actual</th><th>Stock actual</th><th>Stock mínimo</th><th>Activo</th><th>Acciones</th></tr></thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => {
+              {filteredItems.length ? displayItems.map((item) => {
                 const costoActual = item.costoActual ?? item.costoPromedio;
                 return (
                   <tr key={item.id}>
@@ -89,6 +93,11 @@ export default function ProductosTable({ items = [], onEdit, canEdit = true }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

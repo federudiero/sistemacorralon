@@ -7,7 +7,8 @@ import { ARIDOS_SECTIONS, canReadSection } from '../../modules/aridos/utils/perm
 const ITEMS = [
   { to: '/aridos', label: 'Inicio', icon: '🏠', section: ARIDOS_SECTIONS.DASHBOARD },
   { to: '/aridos/ventas', label: 'Vender', icon: '💸', primary: true, section: ARIDOS_SECTIONS.VENTAS },
-  { to: '/aridos/ingresos', label: 'Reposición', icon: '📦', section: ARIDOS_SECTIONS.INGRESOS },
+  { to: '/aridos/cuentas-corrientes', label: 'Cuenta', icon: '💳', section: ARIDOS_SECTIONS.CLIENTES },
+  { to: '/aridos/ingresos', label: 'Stock', icon: '📦', section: ARIDOS_SECTIONS.INGRESOS },
   { to: '/aridos/agenda', label: 'Agenda', icon: '🗓️', section: ARIDOS_SECTIONS.VENTAS },
 ];
 
@@ -23,7 +24,7 @@ export default function MobileQuickActions() {
 
   return (
     <nav className="mobile-quickbar xl:hidden" aria-label="Accesos rápidos móviles">
-      <div className="mobile-quickbar-inner">
+      <div className="mobile-quickbar-inner" style={{ '--quick-actions-count': visibleItems.length }}>
         {visibleItems.map((item) => {
           const active =
             location.pathname === item.to ||

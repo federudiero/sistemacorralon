@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { formatCurrency, formatDateTime, formatQuantity } from '../../utils/formatters';
 import EstadoBadge from '../shared/EstadoBadge';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function EyeIcon() {
@@ -77,6 +79,8 @@ function matchesSearch(item, query) {
 export default function IngresosTable({ items = [], onView, onAnular, processing = false }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -98,7 +102,7 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
 
         <div className="space-y-3 md:hidden">
           {filteredItems.length ? (
-            filteredItems.map((item) => <IngresoCard key={item.id} item={item} onView={onView} onAnular={onAnular} processing={processing} />)
+            displayItems.map((item) => <IngresoCard key={item.id} item={item} onView={onView} onAnular={onAnular} processing={processing} />)
           ) : (
             <div className="mobile-empty-state">No hay reposiciones para mostrar.</div>
           )}
@@ -120,7 +124,7 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
             </thead>
             <tbody>
               {filteredItems.length ? (
-                filteredItems.map((item) => (
+                displayItems.map((item) => (
                   <tr key={item.id}>
                     <td>{formatDateTime(item.fecha)}</td>
                     <td>{item.proveedorNombre || '-'}</td>
@@ -149,6 +153,11 @@ export default function IngresosTable({ items = [], onView, onAnular, processing
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

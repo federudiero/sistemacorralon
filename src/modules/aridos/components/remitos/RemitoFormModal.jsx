@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createRemitoDesdeVenta } from '../../services/remitos.service';
 import { formatQuantity } from '../../utils/formatters';
+import PremiumModalShell from '../shared/PremiumModalShell';
+import AppIcon from '../shared/AppIcon';
 
 export default function RemitoFormModal({ open, venta, cuentaId, currentUserEmail, onClose, onSaved }) {
   const [form, setForm] = useState({ camion: '', chofer: '', observaciones: '' });
@@ -8,7 +10,10 @@ export default function RemitoFormModal({ open, venta, cuentaId, currentUserEmai
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (open) setForm({ camion: '', chofer: '', observaciones: '' });
+    if (open) {
+      setForm({ camion: '', chofer: '', observaciones: '' });
+      setError('');
+    }
   }, [open]);
 
   if (!open || !venta) return null;
@@ -28,18 +33,56 @@ export default function RemitoFormModal({ open, venta, cuentaId, currentUserEmai
   }
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box">
-        <h3 className="font-bold text-lg app-title-text">Generar remito</h3>
-        <p className="mt-1 text-sm app-muted-text">Venta: {venta.clienteNombre} / {venta.productoNombre} / {formatQuantity(venta.cantidad, venta.unidadStock, venta.pesoBolsaKg)}</p>
-        <div className="grid grid-cols-1 gap-3 mt-4">
-          <label className="form-control w-full"><span className="label-text mb-1">Vehículo / camión</span><input className="input input-bordered" value={form.camion} onChange={(e) => setForm((p) => ({ ...p, camion: e.target.value }))} /></label>
-          <label className="form-control w-full"><span className="label-text mb-1">Chofer</span><input className="input input-bordered" value={form.chofer} onChange={(e) => setForm((p) => ({ ...p, chofer: e.target.value }))} /></label>
-          <label className="form-control w-full"><span className="label-text mb-1">Observaciones</span><textarea className="textarea textarea-bordered" value={form.observaciones} onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))} /></label>
-          {error ? <div className="alert alert-error">{error}</div> : null}
+    <PremiumModalShell
+      open={open}
+      icon="file"
+      title="Generar remito"
+      subtitle="Completá los datos operativos del traslado antes de emitirlo."
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      actions={(
+        <>
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+          <button type="button" className="btn btn-primary premium-action-btn" onClick={handleSubmit} disabled={saving}>
+            <AppIcon name="file" size={17} />
+            {saving ? 'Generando...' : 'Generar remito'}
+          </button>
+        </>
+      )}
+    >
+      <div className="premium-form-stack">
+        <div className="premium-summary-card">
+          <span className="premium-summary-card__label">Venta asociada</span>
+          <strong>{venta.clienteNombre || 'Cliente'}</strong>
+          <p>{venta.productoNombre || 'Producto'} · {formatQuantity(venta.cantidad, venta.unidadStock, venta.pesoBolsaKg)}</p>
         </div>
-        <div className="modal-action"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>{saving ? 'Generando...' : 'Generar'}</button></div>
+
+        <section className="premium-form-section">
+          <div className="premium-form-section__header">
+            <span className="premium-form-section__icon"><AppIcon name="truck" size={17} /></span>
+            <div>
+              <h4>Datos de traslado</h4>
+              <p>Vehículo, chofer y observaciones internas para seguimiento.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <label className="form-control w-full">
+              <span className="field-label">Vehículo / camión</span>
+              <input className="input input-bordered h-12" value={form.camion} onChange={(e) => setForm((p) => ({ ...p, camion: e.target.value }))} disabled={saving} />
+            </label>
+            <label className="form-control w-full">
+              <span className="field-label">Chofer</span>
+              <input className="input input-bordered h-12" value={form.chofer} onChange={(e) => setForm((p) => ({ ...p, chofer: e.target.value }))} disabled={saving} />
+            </label>
+            <label className="form-control w-full">
+              <span className="field-label">Observaciones</span>
+              <textarea className="textarea textarea-bordered min-h-28" value={form.observaciones} onChange={(e) => setForm((p) => ({ ...p, observaciones: e.target.value }))} disabled={saving} />
+            </label>
+            {error ? <div className="alert alert-error">{error}</div> : null}
+          </div>
+        </section>
       </div>
-    </dialog>
+    </PremiumModalShell>
   );
 }

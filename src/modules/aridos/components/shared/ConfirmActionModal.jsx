@@ -1,30 +1,55 @@
+import PremiumModalShell from './PremiumModalShell';
+import AppIcon from './AppIcon';
+
 function vibrate(pattern) {
-  if ('vibrate' in navigator) navigator.vibrate(pattern);
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(pattern);
 }
 
-export default function ConfirmActionModal({ open, title = 'Confirmar', description = '¿Querés continuar?', confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', onConfirm, onClose, loading = false }) {
+export default function ConfirmActionModal({
+  open,
+  title = 'Confirmar',
+  description = '¿Querés continuar?',
+  confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
+  onConfirm,
+  onClose,
+  loading = false,
+  tone = 'danger',
+}) {
   if (!open) return null;
 
   function handleConfirm() {
     vibrate([50, 30, 80]);
-    onConfirm();
+    onConfirm?.();
   }
 
   function handleClose() {
     vibrate(20);
-    onClose();
+    onClose?.();
   }
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box w-11/12 max-w-lg">
-        <h3 className="font-bold text-lg app-title-text">{title}</h3>
-        <p className="py-3 app-muted-text">{description}</p>
-        <div className="modal-action">
-          <button className="btn" onClick={handleClose} disabled={loading}>{cancelLabel}</button>
-          <button className="btn btn-error" onClick={handleConfirm} disabled={loading}>{loading ? 'Procesando...' : confirmLabel}</button>
-        </div>
+    <PremiumModalShell
+      open={open}
+      icon="warning"
+      title={title}
+      subtitle={description}
+      onClose={handleClose}
+      maxWidth="max-w-lg"
+      actions={(
+        <>
+          <button type="button" className="btn btn-ghost" onClick={handleClose} disabled={loading}>{cancelLabel}</button>
+          <button type="button" className={`btn ${tone === 'danger' ? 'btn-error' : 'btn-primary'} premium-action-btn`} onClick={handleConfirm} disabled={loading}>
+            <AppIcon name="warning" size={17} />
+            {loading ? 'Procesando...' : confirmLabel}
+          </button>
+        </>
+      )}
+    >
+      <div className="premium-warning-panel">
+        <AppIcon name="warning" size={20} />
+        <p>{description}</p>
       </div>
-    </dialog>
+    </PremiumModalShell>
   );
 }

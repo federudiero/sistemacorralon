@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
 import ListSearchInput from '../components/shared/ListSearchInput';
 import AppSelect from '../components/shared/AppSelect';
 import CuentaCorrientePagoModal from '../components/clientes/CuentaCorrientePagoModal';
+import PaginationControls from '../components/shared/PaginationControls';
+import VisualStatCard from '../components/shared/VisualStatCard';
+import SectionToolbar from '../components/shared/SectionToolbar';
+import UiIconButton from '../components/shared/UiIconButton';
 import useClientes from '../hooks/useClientes';
+import useClientPagination from '../hooks/useClientPagination';
 import {
   registrarPagoCuentaCorriente,
   subscribeMovimientosCuentaCorrienteCliente,
@@ -25,6 +31,57 @@ const FILTROS_ESTADO = [
   { value: 'inactivos', label: 'Inactivos' },
   { value: 'todos', label: 'Todos' },
 ];
+
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.6 12s3.55-6.25 9.4-6.25S21.4 12 21.4 12 17.85 18.25 12 18.25 2.6 12 2.6 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+function CashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="6.5" width="17" height="11" rx="2" />
+      <circle cx="12" cy="12" r="2.2" />
+      <path d="M6.8 9.2h.01M17.2 14.8h.01" />
+    </svg>
+  );
+}
+
+function WalletIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 7.5A2.5 2.5 0 0 1 7 5h10.5A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19H7a2.5 2.5 0 0 1-2.5-2.5v-9Z" />
+      <path d="M15.5 12h5" />
+      <path d="M17.8 12h.01" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20" />
+      <circle cx="10" cy="7.5" r="3.5" />
+      <path d="M20 20v-1.2a3.2 3.2 0 0 0-2.4-3.1" />
+      <path d="M16.5 4.3a3.5 3.5 0 0 1 0 6.4" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
+      <path d="M10.35 4.25 2.7 17.5A2 2 0 0 0 4.43 20.5h15.14a2 2 0 0 0 1.73-3L13.65 4.25a1.9 1.9 0 0 0-3.3 0Z" />
+    </svg>
+  );
+}
 
 const ORDENES = [
   { value: 'mayor_deuda', label: 'Mayor deuda primero' },
@@ -201,15 +258,15 @@ function useCuentaCorrienteMovimientos(cuentaId, clienteId) {
   return { items, loading, error };
 }
 
-function SummaryCard({ label, value, helper }) {
+function SummaryCard({ label, value, helper, icon, tone }) {
   return (
-    <div className="page-section">
-      <div className="page-section-body">
-        <div className="app-eyebrow">{label}</div>
-        <div className="mt-2 text-2xl font-bold app-title-text">{value}</div>
-        {helper ? <p className="mt-1 text-sm app-muted-text">{helper}</p> : null}
-      </div>
-    </div>
+    <VisualStatCard
+      label={label}
+      value={value}
+      helper={helper}
+      icon={icon}
+      tone={tone}
+    />
   );
 }
 
@@ -219,7 +276,7 @@ function ClienteCuentaCard({ cliente, onView, onRegisterPago, canWrite }) {
   const disponible = getLimiteDisponible(cliente);
 
   return (
-    <div className="mobile-data-card">
+    <div className="mobile-data-card account-client-card">
       <div className="mobile-data-card-header">
         <div className="min-w-0 flex-1">
           <div className="truncate mobile-data-card-title">{cliente.nombre || 'Cliente'}</div>
@@ -230,11 +287,12 @@ function ClienteCuentaCard({ cliente, onView, onRegisterPago, canWrite }) {
         <span className={`badge ${getEstadoBadgeClass(cliente)}`}>{getClienteEstadoLabel(cliente)}</span>
       </div>
 
+      <div className="account-client-card__balance">
+        <span>Saldo pendiente</span>
+        <strong>{formatCurrency(saldo)}</strong>
+      </div>
+
       <div className="mobile-data-grid">
-        <div>
-          <span className="mobile-data-label">Saldo pendiente</span>
-          <span className="mobile-data-value strong">{formatCurrency(saldo)}</span>
-        </div>
         <div>
           <span className="mobile-data-label">Límite</span>
           <span className="mobile-data-value">{limite > 0 ? formatCurrency(limite) : 'Sin límite'}</span>
@@ -255,14 +313,10 @@ function ClienteCuentaCard({ cliente, onView, onRegisterPago, canWrite }) {
         </div>
       </div>
 
-      <div className="mobile-card-actions">
-        <button type="button" className="btn btn-sm" onClick={() => onView?.(cliente)}>
-          Ver detalle
-        </button>
+      <div className="mobile-card-actions account-action-row">
+        <UiIconButton size="sm" label="Ver detalle" tone="neutral" icon={<EyeIcon />} onClick={() => onView?.(cliente)} />
         {canWrite && saldo > 0 ? (
-          <button type="button" className="btn btn-sm btn-primary" onClick={() => onRegisterPago?.(cliente)}>
-            Registrar pago
-          </button>
+          <UiIconButton size="sm" label="Registrar pago" tone="secondary" icon={<CashIcon />} onClick={() => onRegisterPago?.(cliente)} />
         ) : null}
       </div>
     </div>
@@ -299,6 +353,8 @@ function CuentaCorrienteDetalleModal({
   onRegisterPago,
 }) {
   const { items, loading, error } = useCuentaCorrienteMovimientos(cuentaId, open ? cliente?.id : null);
+  const movimientosPagination = useClientPagination(items, { pageSize: 10 });
+  const movimientosVisibles = movimientosPagination.paginatedItems;
 
   if (!open || !cliente) return null;
 
@@ -308,7 +364,7 @@ function CuentaCorrienteDetalleModal({
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box max-w-5xl">
+      <div className="modal-box account-detail-modal max-w-5xl">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <h3 className="text-lg font-bold app-title-text">Cuenta corriente de {cliente.nombre || 'Cliente'}</h3>
@@ -320,17 +376,17 @@ function CuentaCorrienteDetalleModal({
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-4">
+          <div className="account-modal-metric">
             <div className="app-eyebrow">Saldo pendiente</div>
             <div className="mt-1 text-xl font-bold app-title-text">{formatCurrency(saldo)}</div>
           </div>
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-4">
+          <div className="account-modal-metric">
             <div className="app-eyebrow">Límite asignado</div>
             <div className="mt-1 text-xl font-bold app-title-text">
               {limite > 0 ? formatCurrency(limite) : 'Sin límite'}
             </div>
           </div>
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-4">
+          <div className="account-modal-metric">
             <div className="app-eyebrow">Disponible</div>
             <div className="mt-1 text-xl font-bold app-title-text">
               {disponible == null ? '-' : formatCurrency(disponible)}
@@ -350,13 +406,11 @@ function CuentaCorrienteDetalleModal({
           {error ? <div className="alert alert-error mb-3">{error}</div> : null}
 
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="loading loading-spinner loading-lg" />
-            </div>
+            <PageLoadingState title="Cargando movimientos..." rows={4} />
           ) : (
             <>
               <div className="space-y-3 md:hidden">
-                {items.length ? items.map((item) => (
+                {items.length ? movimientosVisibles.map((item) => (
                   <div key={item.id} className="mobile-data-card">
                     <div className="mobile-data-card-header">
                       <div>
@@ -407,7 +461,7 @@ function CuentaCorrienteDetalleModal({
                     </tr>
                   </thead>
                   <tbody>
-                    {items.length ? items.map((item) => (
+                    {items.length ? movimientosVisibles.map((item) => (
                       <tr key={item.id}>
                         <td>{formatDateOnly(item.fecha)}</td>
                         <td><MovimientoBadge tipo={item.tipo} /></td>
@@ -427,6 +481,11 @@ function CuentaCorrienteDetalleModal({
                   </tbody>
                 </table>
               </div>
+
+              <PaginationControls
+                {...movimientosPagination}
+                onPageChange={movimientosPagination.setPage}
+              />
             </>
           )}
         </div>
@@ -495,6 +554,9 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
     [clientesCuentaCorriente, filtroEstado, orden, search],
   );
 
+  const clientesPagination = useClientPagination(filteredClientes, { pageSize: 10 });
+  const clientesVisibles = clientesPagination.paginatedItems;
+
   async function handleRegistrarPago(form) {
     if (!canWrite || !clientePago?.id) return;
     setSavingPago(true);
@@ -542,37 +604,41 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
           label="Total pendiente"
           value={formatCurrency(resumen.totalPendiente)}
           helper="Saldo abierto en cuentas corrientes."
+          icon={<WalletIcon />}
+          tone="warning"
         />
         <SummaryCard
           label="Clientes con deuda"
           value={resumen.clientesConDeuda}
           helper="Clientes registrados con saldo mayor a cero."
+          icon={<UsersIcon />}
+          tone="info"
         />
         <SummaryCard
           label="Sobre límite"
           value={resumen.clientesSobreLimite}
           helper="Clientes que superaron el límite cargado."
+          icon={<AlertIcon />}
+          tone={resumen.clientesSobreLimite ? 'danger' : 'neutral'}
         />
         <SummaryCard
           label="Excedente total"
           value={formatCurrency(resumen.totalSobreLimite)}
           helper="Monto que supera los límites definidos."
+          icon={<CashIcon />}
+          tone={resumen.totalSobreLimite ? 'danger' : 'success'}
         />
       </div>
 
       <div className="page-section">
         <div className="page-section-body">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold app-title-text">Clientes y saldos</h3>
-              <p className="mt-1 text-sm app-muted-text">
-                No se muestra el cliente genérico porque no puede operar con cuenta corriente.
-              </p>
-            </div>
-            <span className="badge-soft whitespace-nowrap">{filteredClientes.length} registros</span>
-          </div>
+          <SectionToolbar
+            title="Clientes y saldos"
+            subtitle="No se muestra el cliente genérico porque no puede operar con cuenta corriente."
+            badge={`${filteredClientes.length} registros`}
+          />
 
-          <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_220px_230px]">
+          <div className="account-filter-panel mb-4 grid gap-3 lg:grid-cols-[1fr_220px_230px]">
             <ListSearchInput
               value={search}
               onChange={setSearch}
@@ -594,13 +660,11 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-10">
-              <div className="loading loading-spinner loading-lg" />
-            </div>
+            <PageLoadingState title="Cargando cuentas corrientes..." rows={5} />
           ) : (
             <>
               <div className="space-y-3 md:hidden">
-                {filteredClientes.length ? filteredClientes.map((cliente) => (
+                {filteredClientes.length ? clientesVisibles.map((cliente) => (
                   <ClienteCuentaCard
                     key={cliente.id}
                     cliente={cliente}
@@ -626,7 +690,7 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredClientes.length ? filteredClientes.map((cliente) => {
+                    {filteredClientes.length ? clientesVisibles.map((cliente) => {
                       const saldo = getNumber(cliente.saldoCuentaCorriente);
                       const limite = getNumber(cliente.limiteCuentaCorriente);
                       const disponible = getLimiteDisponible(cliente);
@@ -647,13 +711,9 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
                           <td><span className={`badge ${getEstadoBadgeClass(cliente)}`}>{getClienteEstadoLabel(cliente)}</span></td>
                           <td>
                             <div className="table-action-cell">
-                              <button type="button" className="btn btn-xs" onClick={() => setClienteDetalle(cliente)}>
-                                Detalle
-                              </button>
+                              <UiIconButton size="sm" label="Detalle" tone="neutral" icon={<EyeIcon />} onClick={() => setClienteDetalle(cliente)} />
                               {canWrite && saldo > 0 ? (
-                                <button type="button" className="btn btn-xs btn-primary" onClick={() => openPago(cliente)}>
-                                  Pago
-                                </button>
+                                <UiIconButton size="sm" label="Pago" tone="secondary" icon={<CashIcon />} onClick={() => openPago(cliente)} />
                               ) : null}
                             </div>
                           </td>
@@ -669,6 +729,11 @@ export default function CuentasCorrientesPage({ cuentaId, currentUserEmail, secu
                   </tbody>
                 </table>
               </div>
+
+              <PaginationControls
+                {...clientesPagination}
+                onPageChange={clientesPagination.setPage}
+              />
             </>
           )}
         </div>

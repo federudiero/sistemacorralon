@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function PencilIcon() {
@@ -44,6 +46,8 @@ function matchesSearch(item, query) {
 export default function ProveedoresTable({ items = [], onEdit, canEdit = true }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -58,14 +62,14 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre, teléfono, dirección o CUIT" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <ProveedorCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay proveedores cargados.</div>}
+          {filteredItems.length ? displayItems.map((item) => <ProveedorCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay proveedores cargados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>CUIT</th><th>Activo</th><th>Acciones</th></tr></thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{item.nombre || '-'}</td>
                   <td>{item.telefono || '-'}</td>
@@ -78,6 +82,11 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

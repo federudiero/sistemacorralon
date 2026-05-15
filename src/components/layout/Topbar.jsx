@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCuenta } from '../../contexts/CuentaContext';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import AppIcon from '../../modules/aridos/components/shared/AppIcon';
 
 function getScreenTitle(pathname) {
   if (pathname.startsWith('/aridos/ventas')) return 'Ventas';
@@ -9,6 +10,7 @@ function getScreenTitle(pathname) {
   if (pathname.startsWith('/aridos/ingresos')) return 'Reposición';
   if (pathname.startsWith('/aridos/cierre-caja')) return 'Cierre';
   if (pathname.startsWith('/aridos/productos')) return 'Productos';
+  if (pathname.startsWith('/aridos/cuentas-corrientes')) return 'Cuentas';
   if (pathname.startsWith('/aridos/clientes')) return 'Clientes';
   if (pathname.startsWith('/aridos/proveedores')) return 'Proveedores';
   if (pathname.startsWith('/aridos/movimientos')) return 'Movimientos';
@@ -36,7 +38,7 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
               onClick={onOpenMenu}
               aria-label={mobileSidebarOpen ? 'Menú abierto' : 'Abrir menú'}
             >
-              ☰
+              <AppIcon name="menu" size={18} />
             </button>
 
             <div className="min-w-0">
@@ -64,7 +66,7 @@ export default function Topbar({ onOpenMenu, mobileSidebarOpen }) {
               aria-label={mode === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               title={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
             >
-              <span>{mode === 'dark' ? '☀️' : '🌙'}</span>
+              <span><AppIcon name={mode === 'dark' ? 'sun' : 'moon'} size={18} /></span>
             </button>
 
             <button className="btn btn-ghost btn-sm h-10 px-3 topbar-logout-btn" onClick={logout}>

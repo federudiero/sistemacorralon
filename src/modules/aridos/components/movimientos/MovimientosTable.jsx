@@ -6,7 +6,9 @@ import {
   formatQuantity,
   formatReferenciaMovimiento,
 } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 
 function MovimientoCard({ item }) {
   return (
@@ -40,6 +42,8 @@ function matchesSearch(item, query) {
 export default function MovimientosTable({ items = [] }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -54,14 +58,14 @@ export default function MovimientosTable({ items = [] }) {
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por producto, tipo, motivo o usuario" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <MovimientoCard key={item.id} item={item} />) : <div className="mobile-empty-state">No hay movimientos para los filtros seleccionados.</div>}
+          {filteredItems.length ? displayItems.map((item) => <MovimientoCard key={item.id} item={item} />) : <div className="mobile-empty-state">No hay movimientos para los filtros seleccionados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Monto</th><th>Referencia</th><th>Detalle</th><th>Usuario</th></tr></thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
                   <td>{formatMovimientoTipo(item.tipo, item.referenciaTipo)}</td>
@@ -76,6 +80,11 @@ export default function MovimientosTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

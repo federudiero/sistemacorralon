@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import MovimientoFilters from '../components/movimientos/MovimientoFilters';
 import MovimientosTable from '../components/movimientos/MovimientosTable';
 import useMovimientosStock from '../hooks/useMovimientosStock';
@@ -16,7 +17,7 @@ export default function MovimientosStockPage({ cuentaId }) {
       <PageHeader title="Movimientos de stock" />
       <MovimientoFilters filters={filters} setFilters={setFilters} productos={productos} />
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : <MovimientosTable items={items} />}
+      {loading ? <PageLoadingState title="Cargando movimientos..." rows={6} /> : <MovimientosTable items={items} />}
     </div>
   );
 }

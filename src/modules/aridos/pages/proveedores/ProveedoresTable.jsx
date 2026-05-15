@@ -1,3 +1,5 @@
+import useClientPagination from '../../hooks/useClientPagination';
+import PaginationControls from '../../components/shared/PaginationControls';
 import UiIconButton from '../../components/shared/UiIconButton';
 
 function PencilIcon() {
@@ -49,6 +51,9 @@ function ProveedorCard({ item, onEdit, canEdit }) {
 }
 
 export default function ProveedoresTable({ items = [], onEdit, canEdit = true }) {
+  const pagination = useClientPagination(items, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
+
   return (
     <div className="page-section">
       <div className="page-section-body">
@@ -59,7 +64,7 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
 
         <div className="space-y-3 md:hidden">
           {items.length ? (
-            items.map((item) => (
+            displayItems.map((item) => (
               <ProveedorCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />
             ))
           ) : (
@@ -81,7 +86,7 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
             </thead>
             <tbody>
               {items.length ? (
-                items.map((item) => (
+                displayItems.map((item) => (
                   <tr key={item.id}>
                     <td>{item.nombre || '-'}</td>
                     <td>{item.telefono || '-'}</td>
@@ -113,6 +118,11 @@ export default function ProveedoresTable({ items = [], onEdit, canEdit = true })
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

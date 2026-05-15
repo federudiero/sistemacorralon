@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
+import AppIcon from '../components/shared/AppIcon';
 import ProductosTable from '../components/productos/ProductosTable';
 import ProductoFormModal from '../components/productos/ProductoFormModal';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
@@ -27,10 +29,10 @@ export default function ProductosPage({ cuentaId, currentUserEmail, security }) 
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Productos" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo producto</button> : null} />
+      <PageHeader title="Productos" actions={canWrite ? <button className="btn btn-primary premium-action-btn" onClick={() => { setSelected(null); setOpen(true); }}><AppIcon name="product" size={17} />Nuevo producto</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso de escritura sobre productos. Podés consultar el catálogo pero no modificarlo." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : <ProductosTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} />}
+      {loading ? <PageLoadingState title="Cargando productos..." rows={5} /> : <ProductosTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} />}
       <ProductoFormModal open={open} initialData={selected} onClose={() => { setOpen(false); setSelected(null); }} onSubmit={handleSubmit} loading={saving} disabled={!canWrite} />
     </div>
   );

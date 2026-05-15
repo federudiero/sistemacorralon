@@ -1,4 +1,6 @@
+import useClientPagination from '../../hooks/useClientPagination';
 import { formatM3 } from '../../utils/formatters';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function PencilIcon() {
@@ -54,6 +56,9 @@ function BateaMobileCard({ item, onEdit, canEdit }) {
 }
 
 export default function BateaTable({ items = [], onEdit, canEdit = true }) {
+  const pagination = useClientPagination(items, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
+
   return (
     <div className="page-section">
       <div className="flex items-center justify-between gap-3 px-4 py-4" style={{ borderBottom: '1px solid var(--app-border)' }}>
@@ -62,7 +67,7 @@ export default function BateaTable({ items = [], onEdit, canEdit = true }) {
       </div>
 
       <div className="grid gap-3 p-4 md:hidden">
-        {items.length ? items.map((item) => (
+        {items.length ? displayItems.map((item) => (
           <BateaMobileCard key={item.id} item={item} onEdit={onEdit} canEdit={canEdit} />
         )) : <div className="mobile-empty-state">No hay bateas cargadas.</div>}
       </div>
@@ -83,7 +88,7 @@ export default function BateaTable({ items = [], onEdit, canEdit = true }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {displayItems.map((item) => (
               <tr key={item.id}>
                 <td>{item.nombre || '-'}</td>
                 <td>{item.codigo || '-'}</td>
@@ -110,6 +115,13 @@ export default function BateaTable({ items = [], onEdit, canEdit = true }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="px-4 pb-4">
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

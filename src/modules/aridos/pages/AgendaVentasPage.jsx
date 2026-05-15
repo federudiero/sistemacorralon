@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
+import PaginationControls from '../components/shared/PaginationControls';
 import useVentasAgenda from '../hooks/useVentasAgenda';
+import useClientPagination from '../hooks/useClientPagination';
 import { updateVentaEntregaEstado } from '../services/ventas.service';
 import {
   formatCurrency,
@@ -154,6 +157,8 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
   }, [salesByDate, selectedDate]);
 
   const selectedSummary = salesByDate[selectedDate] || { count: 0, amount: 0 };
+  const selectedPagination = useClientPagination(selectedItems, { pageSize: 10 });
+  const selectedItemsVisibles = selectedPagination.paginatedItems;
 
   async function handleEntrega(item, entregaEstado) {
     if (!canEditEntrega || !item?.id) return;
@@ -220,7 +225,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-12"><span className="loading loading-spinner loading-lg" /></div>
+              <PageLoadingState title="Cargando agenda..." rows={4} />
             ) : (
               <div className="agenda-calendar-grid grid grid-cols-7 gap-2 sm:gap-3">
                 {calendarCells.map((date) => {
@@ -274,7 +279,7 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
 
 
             <div className="space-y-3">
-              {selectedItems.length ? selectedItems.map((item) => (
+              {selectedItems.length ? selectedItemsVisibles.map((item) => (
                 <AgendaVentaCard
                   key={item.id}
                   item={item}
@@ -288,6 +293,11 @@ export default function AgendaVentasPage({ cuentaId, currentUserEmail, security 
                 </div>
               )}
             </div>
+
+            <PaginationControls
+              {...selectedPagination}
+              onPageChange={selectedPagination.setPage}
+            />
           </div>
         </div>
       </div>

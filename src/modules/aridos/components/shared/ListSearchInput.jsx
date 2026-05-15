@@ -1,3 +1,5 @@
+import AppIcon from './AppIcon';
+
 export default function ListSearchInput({
   value = '',
   onChange,
@@ -7,7 +9,7 @@ export default function ListSearchInput({
 }) {
   return (
     <div className={`app-searchbar ${className}`.trim()}>
-      <div className="app-searchbar-icon" aria-hidden="true">⌕</div>
+      <div className="app-searchbar-icon" aria-hidden="true"><AppIcon name="search" size={17} /></div>
       <input
         type="search"
         className="input input-bordered app-search-input"

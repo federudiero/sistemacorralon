@@ -1,4 +1,6 @@
+import useClientPagination from '../../hooks/useClientPagination';
 import { formatQuantity } from '../../utils/formatters';
+import PaginationControls from '../shared/PaginationControls';
 
 function StockCriticoCard({ item }) {
   return (
@@ -30,6 +32,9 @@ function StockCriticoCard({ item }) {
 }
 
 export default function StockCriticoTable({ items = [] }) {
+  const pagination = useClientPagination(items, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
+
   return (
     <div className="page-section">
       <div className="page-section-body">
@@ -39,14 +44,14 @@ export default function StockCriticoTable({ items = [] }) {
         </div>
 
         <div className="space-y-3 md:hidden">
-          {items.length ? items.map((item) => <StockCriticoCard key={item.id} item={item} />) : <div className="mobile-empty-state">Sin stock crítico para esta fecha.</div>}
+          {items.length ? displayItems.map((item) => <StockCriticoCard key={item.id} item={item} />) : <div className="mobile-empty-state">Sin stock crítico para esta fecha.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th></tr></thead>
             <tbody>
-              {items.length ? items.map((item) => (
+              {items.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{item.nombre}</td>
                   <td>{formatQuantity(item.stockActual ?? item.stockTotalM3, item.unidadStock || item.unidad, item.pesoBolsaKg)}</td>
@@ -56,6 +61,11 @@ export default function StockCriticoTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

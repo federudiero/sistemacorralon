@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import VentaForm from '../components/ventas/VentaForm';
 import VentasTable from '../components/ventas/VentasTable';
 import VentaDetalleModal from '../components/ventas/VentaDetalleModal';
@@ -74,7 +75,7 @@ export default function VentasPage({ cuentaId, currentUserEmail, security }) {
       />
       {error ? <div className="alert alert-error">{error}</div> : null}
       {loading ? (
-        <div className="loading loading-spinner loading-lg" />
+        <PageLoadingState title="Cargando ventas..." rows={6} />
       ) : (
         <VentasTable
           items={items}

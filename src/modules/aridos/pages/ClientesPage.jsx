@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
+import AppIcon from '../components/shared/AppIcon';
 import ClientesTable from '../components/clientes/ClientesTable';
 import ClienteFormModal from '../components/clientes/ClienteFormModal';
 import CuentaCorrientePagoModal from '../components/clientes/CuentaCorrientePagoModal';
@@ -56,12 +58,12 @@ export default function ClientesPage({ cuentaId, currentUserEmail, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Clientes" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo cliente</button> : null} />
+      <PageHeader title="Clientes" actions={canWrite ? <button className="btn btn-primary premium-action-btn" onClick={() => { setSelected(null); setOpen(true); }}><AppIcon name="clients" size={17} />Nuevo cliente</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para alta o edición de clientes." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
       {errorPago ? <div className="alert alert-error">{errorPago}</div> : null}
       {loading ? (
-        <div className="loading loading-spinner loading-lg" />
+        <PageLoadingState title="Cargando clientes..." rows={5} />
       ) : (
         <ClientesTable
           items={items}

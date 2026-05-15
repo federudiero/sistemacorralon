@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function PencilIcon() {
@@ -81,6 +83,8 @@ function matchesSearch(item, query) {
 export default function ClientesTable({ items = [], onEdit, onRegisterPago, canEdit = true }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -95,7 +99,7 @@ export default function ClientesTable({ items = [], onEdit, onRegisterPago, canE
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre, alias, teléfono o documento" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <ClienteCard key={item.id} item={item} onEdit={onEdit} onRegisterPago={onRegisterPago} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay clientes cargados.</div>}
+          {filteredItems.length ? displayItems.map((item) => <ClienteCard key={item.id} item={item} onEdit={onEdit} onRegisterPago={onRegisterPago} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay clientes cargados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
@@ -104,7 +108,7 @@ export default function ClientesTable({ items = [], onEdit, onRegisterPago, canE
               <tr><th>Nombre</th><th>Alias</th><th>Teléfono</th><th>Dirección</th><th>CUIT / DNI</th><th>Saldo CC</th><th>Tipo</th><th>Activo</th><th>Acciones</th></tr>
             </thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{item.nombre || '-'}</td>
                   <td>{item.alias || '-'}</td>
@@ -131,6 +135,11 @@ export default function ClientesTable({ items = [], onEdit, onRegisterPago, canE
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

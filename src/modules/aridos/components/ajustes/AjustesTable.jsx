@@ -1,4 +1,6 @@
+import useClientPagination from '../../hooks/useClientPagination';
 import { formatDateTime, formatQuantity } from '../../utils/formatters';
+import PaginationControls from '../shared/PaginationControls';
 import UiIconButton from '../shared/UiIconButton';
 
 function UndoIcon() {
@@ -54,6 +56,9 @@ function AjusteMobileCard({ item, onAnnular, canAnnul }) {
 }
 
 export default function AjustesTable({ items = [], onAnnular, canAnnul = false }) {
+  const pagination = useClientPagination(items, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
+
   return (
     <div className="page-section">
       <div className="flex items-center justify-between gap-3 px-4 py-4" style={{ borderBottom: '1px solid var(--app-border)' }}>
@@ -62,7 +67,7 @@ export default function AjustesTable({ items = [], onAnnular, canAnnul = false }
       </div>
 
       <div className="grid gap-3 p-4 md:hidden">
-        {items.length ? items.map((item) => <AjusteMobileCard key={item.id} item={item} onAnnular={onAnnular} canAnnul={canAnnul} />) : (
+        {items.length ? displayItems.map((item) => <AjusteMobileCard key={item.id} item={item} onAnnular={onAnnular} canAnnul={canAnnul} />) : (
           <div className="mobile-empty-state">No hay ajustes para mostrar.</div>
         )}
       </div>
@@ -82,7 +87,7 @@ export default function AjustesTable({ items = [], onAnnular, canAnnul = false }
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => {
+            {displayItems.map((item) => {
               const isBlocked = item.revertido || item.esReversion;
               return (
                 <tr key={item.id}>
@@ -99,6 +104,13 @@ export default function AjustesTable({ items = [], onAnnular, canAnnul = false }
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="px-4 pb-4">
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

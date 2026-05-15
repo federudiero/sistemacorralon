@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { REMITO_ESTADOS } from '../../utils/constants';
 import { formatDateTime, formatQuantity, formatVehiculoEntrega } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
 import RemitoEstadoBadge from './RemitoEstadoBadge';
 import AppSelect from '../shared/AppSelect';
+import PaginationControls from '../shared/PaginationControls';
 
 function RemitoCard({ item, onChangeEstado, canEdit }) {
   return (
@@ -47,6 +49,8 @@ function matchesSearch(item, query) {
 export default function RemitosTable({ items = [], onChangeEstado, canEdit = true }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -62,14 +66,14 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por número, cliente, producto, chofer o estado" count={filteredItems.length} className="mb-4" />
 
         <div className="space-y-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <RemitoCard key={item.id} item={item} onChangeEstado={onChangeEstado} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay remitos para mostrar.</div>}
+          {filteredItems.length ? displayItems.map((item) => <RemitoCard key={item.id} item={item} onChangeEstado={onChangeEstado} canEdit={canEdit} />) : <div className="mobile-empty-state">No hay remitos para mostrar.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Fecha</th><th>Remito</th><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Vehículo</th><th>Chofer</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
                   <td className="font-semibold">#{item.numeroRemito || item.id}</td>
@@ -85,6 +89,11 @@ export default function RemitosTable({ items = [], onChangeEstado, canEdit = tru
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

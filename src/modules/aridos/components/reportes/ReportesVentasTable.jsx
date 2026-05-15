@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { formatCurrency, formatDateTime, formatEntregaEstado, formatQuantity } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import EstadoBadge from '../shared/EstadoBadge';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 
 function VentaReporteCard({ item }) {
   return (
@@ -52,6 +54,8 @@ function matchesSearch(item, query) {
 export default function ReportesVentasTable({ items = [] }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="mb-4 page-section">
@@ -67,7 +71,7 @@ export default function ReportesVentasTable({ items = [] }) {
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por cliente, producto, pago o estado" count={filteredItems.length} className="mb-4" />
 
         <div className="grid gap-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <VentaReporteCard key={item.id} item={item} />) : (
+          {filteredItems.length ? displayItems.map((item) => <VentaReporteCard key={item.id} item={item} />) : (
             <div className="mobile-empty-state">No hay ventas para mostrar en este rango.</div>
           )}
         </div>
@@ -87,7 +91,7 @@ export default function ReportesVentasTable({ items = [] }) {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
                   <td>{item.clienteNombre}</td>
@@ -104,6 +108,11 @@ export default function ReportesVentasTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

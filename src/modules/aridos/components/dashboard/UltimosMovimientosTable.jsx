@@ -1,4 +1,6 @@
+import useClientPagination from '../../hooks/useClientPagination';
 import { formatDateTime, formatQuantity, formatCurrency, formatMovimientoTipo } from '../../utils/formatters';
+import PaginationControls from '../shared/PaginationControls';
 
 function UltimoMovimientoCard({ item }) {
   return (
@@ -30,6 +32,9 @@ function UltimoMovimientoCard({ item }) {
 }
 
 export default function UltimosMovimientosTable({ items = [] }) {
+  const pagination = useClientPagination(items, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
+
   return (
     <div className="page-section">
       <div className="page-section-body">
@@ -39,14 +44,14 @@ export default function UltimosMovimientosTable({ items = [] }) {
         </div>
 
         <div className="space-y-3 md:hidden">
-          {items.length ? items.map((item) => <UltimoMovimientoCard key={item.id} item={item} />) : <div className="mobile-empty-state">Sin movimientos cargados.</div>}
+          {items.length ? displayItems.map((item) => <UltimoMovimientoCard key={item.id} item={item} />) : <div className="mobile-empty-state">Sin movimientos cargados.</div>}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
           <table className="table">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Detalle</th></tr></thead>
             <tbody>
-              {items.length ? items.map((item) => (
+              {items.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha || item.fechaStr)}</td>
                   <td>{formatMovimientoTipo(item.tipo, item.referenciaTipo)}</td>
@@ -58,6 +63,11 @@ export default function UltimosMovimientosTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

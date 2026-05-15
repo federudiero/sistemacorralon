@@ -9,8 +9,10 @@ import {
   formatEstadoPago,
   formatQuantity,
 } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import EstadoBadge from '../shared/EstadoBadge';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 import EntregaStateSelector from '../shared/EntregaStateSelector';
 import UiIconButton from '../shared/UiIconButton';
 
@@ -223,6 +225,8 @@ export default function VentasTable({
 }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -259,7 +263,7 @@ export default function VentasTable({
 
         <div className="space-y-3 md:hidden ventas-mobile-list">
           {filteredItems.length ? (
-            filteredItems.map((item) => (
+            displayItems.map((item) => (
               <VentaCard
                 key={item.id}
                 item={item}
@@ -297,7 +301,7 @@ export default function VentasTable({
             </thead>
             <tbody>
               {filteredItems.length ? (
-                filteredItems.map((item) => (
+                displayItems.map((item) => (
                   <tr key={item.id}>
                     <td>{formatDateTime(item.fecha)}</td>
                     <td>{item.clienteNombre}</td>
@@ -354,6 +358,11 @@ export default function VentasTable({
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

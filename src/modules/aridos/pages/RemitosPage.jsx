@@ -1,4 +1,5 @@
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import RemitosTable from '../components/remitos/RemitosTable';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
 import useRemitos from '../hooks/useRemitos';
@@ -19,7 +20,7 @@ export default function RemitosPage({ cuentaId, currentUserEmail, security }) {
       <PageHeader title="Remitos" subtitle="Seguimiento operativo de entregas" />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para cambiar el estado de remitos." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : <RemitosTable items={items} onChangeEstado={handleChangeEstado} canEdit={canWrite} />}
+      {loading ? <PageLoadingState title="Cargando remitos..." rows={5} /> : <RemitosTable items={items} onChangeEstado={handleChangeEstado} canEdit={canWrite} />}
     </div>
   );
 }

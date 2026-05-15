@@ -10,6 +10,25 @@ const buildInitialForm = () => ({
   observaciones: '',
 });
 
+function PaymentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.05" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="6.5" width="17" height="11" rx="2" />
+      <circle cx="12" cy="12" r="2.2" />
+      <path d="M6.8 9.2h.01M17.2 14.8h.01" />
+    </svg>
+  );
+}
+
+function BalanceBox({ label, value, tone = 'neutral' }) {
+  return (
+    <div className={`payment-balance-box payment-balance-box--${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 export default function CuentaCorrientePagoModal({
   open,
   cliente,
@@ -47,12 +66,21 @@ export default function CuentaCorrientePagoModal({
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box max-w-xl">
-        <div>
-          <h3 className="text-lg font-bold app-title-text">Registrar pago de cuenta corriente</h3>
-          <p className="mt-1 text-sm app-muted-text">
-            {cliente?.nombre || 'Cliente'} · {helperText}
-          </p>
+      <div className="modal-box account-payment-modal max-w-xl">
+        <div className="account-payment-modal__header">
+          <div className="account-payment-modal__icon" aria-hidden="true"><PaymentIcon /></div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold app-title-text">Registrar pago de cuenta corriente</h3>
+            <p className="mt-1 text-sm app-muted-text">
+              {cliente?.nombre || 'Cliente'} · {helperText}
+            </p>
+          </div>
+        </div>
+
+        <div className="payment-balance-grid">
+          <BalanceBox label="Saldo actual" value={formatCurrency(saldoActual)} tone="warning" />
+          <BalanceBox label="Pago a registrar" value={formatCurrency(monto || 0)} tone="info" />
+          <BalanceBox label="Saldo posterior" value={formatCurrency(saldoPosterior)} tone="success" />
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { formatDateTime, formatQuantity } from '../../utils/formatters';
+import useClientPagination from '../../hooks/useClientPagination';
 import ListSearchInput from '../shared/ListSearchInput';
+import PaginationControls from '../shared/PaginationControls';
 
 function MovimientoReporteCard({ item }) {
   return (
@@ -36,6 +38,8 @@ function matchesSearch(item, query) {
 export default function ReportesMovimientosTable({ items = [] }) {
   const [search, setSearch] = useState('');
   const filteredItems = useMemo(() => items.filter((item) => matchesSearch(item, search)), [items, search]);
+  const pagination = useClientPagination(filteredItems, { pageSize: 10 });
+  const displayItems = pagination.paginatedItems;
 
   return (
     <div className="page-section">
@@ -51,7 +55,7 @@ export default function ReportesMovimientosTable({ items = [] }) {
         <ListSearchInput value={search} onChange={setSearch} placeholder="Buscar por tipo, producto o motivo" count={filteredItems.length} className="mb-4" />
 
         <div className="grid gap-3 md:hidden">
-          {filteredItems.length ? filteredItems.map((item) => <MovimientoReporteCard key={item.id} item={item} />) : (
+          {filteredItems.length ? displayItems.map((item) => <MovimientoReporteCard key={item.id} item={item} />) : (
             <div className="mobile-empty-state">No hay movimientos para mostrar en este rango.</div>
           )}
         </div>
@@ -68,7 +72,7 @@ export default function ReportesMovimientosTable({ items = [] }) {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.length ? filteredItems.map((item) => (
+              {filteredItems.length ? displayItems.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDateTime(item.fecha)}</td>
                   <td>{item.tipo}</td>
@@ -82,6 +86,11 @@ export default function ReportesMovimientosTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          {...pagination}
+          onPageChange={pagination.setPage}
+        />
       </div>
     </div>
   );

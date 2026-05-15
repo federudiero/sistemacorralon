@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCuenta } from '../../contexts/CuentaContext';
 import { useAridosSecurity } from '../../modules/aridos/hooks/useAridosSecurity';
 import { buildAridosNavItems } from '../../modules/aridos/utils/navigation';
+import AppIcon from '../../modules/aridos/components/shared/AppIcon';
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
   const { user } = useAuth();
@@ -46,7 +47,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                 onClick={onClose}
                 aria-label="Cerrar menú"
               >
-                ✕
+                <AppIcon name="closeX" size={18} />
               </button>
             </div>
 
@@ -62,6 +63,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                     onClick={onClose}
                     className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                   >
+                    {item.icon ? <span className="sidebar-link__icon" aria-hidden="true">{item.icon}</span> : null}
                     <span className="truncate">{item.label}</span>
                   </NavLink>
                 ))}

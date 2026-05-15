@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import ConfirmActionModal from '../components/shared/ConfirmActionModal';
+import PaginationControls from '../components/shared/PaginationControls';
 import {
   anularCierreCaja,
   crearCierreCaja,
@@ -10,6 +12,7 @@ import {
 import { formatCondicionPago, formatCurrency, formatEstadoPago, formatMetodoCobro, toInputDate } from '../utils/formatters';
 import EstadoBadge from '../components/shared/EstadoBadge';
 import AppSelect from '../components/shared/AppSelect';
+import useClientPagination from '../hooks/useClientPagination';
 import { ARIDOS_SECTIONS, canAnnulSection, canWriteSection } from '../utils/permissions';
 
 function renderMoneyParts(value) {
@@ -205,6 +208,12 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
     return cierres.filter((item) => String(item.fechaStr || '').startsWith(historyMonth));
   }, [cierres, historyMonth]);
 
+  const ventasEntregadas = data?.ventasEntregadas || [];
+  const ventasPagination = useClientPagination(ventasEntregadas, { pageSize: 10 });
+  const ventasVisibles = ventasPagination.paginatedItems;
+  const historyPagination = useClientPagination(filteredHistory, { pageSize: 10 });
+  const historyVisible = historyPagination.paginatedItems;
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -225,7 +234,7 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
       {error ? <div className="alert alert-error">{error}</div> : null}
 
       {loading ? (
-        <div className="loading loading-spinner loading-lg" />
+        <PageLoadingState title="Calculando cierre de caja..." rows={4} />
       ) : data ? (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -419,12 +428,12 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
               <div className="page-section-body">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <h3 className="text-lg font-semibold app-title-text">Ventas entregadas del día</h3>
-                  <span className="badge-soft">{data.ventasEntregadas.length} registros</span>
+                  <span className="badge-soft">{ventasEntregadas.length} registros</span>
                 </div>
 
                 <div className="space-y-3 md:hidden">
-                  {data.ventasEntregadas.length ? (
-                    data.ventasEntregadas.map((item) => (
+                  {ventasEntregadas.length ? (
+                    ventasVisibles.map((item) => (
                       <VentaCierreCard key={item.id} item={item} />
                     ))
                   ) : (
@@ -444,8 +453,8 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                       </tr>
                     </thead>
                     <tbody>
-                      {data.ventasEntregadas.length ? (
-                        data.ventasEntregadas.map((item) => (
+                      {ventasEntregadas.length ? (
+                        ventasVisibles.map((item) => (
                           <tr key={item.id}>
                             <td>{item.clienteNombre}</td>
                             <td>{item.productoNombre}</td>
@@ -466,6 +475,11 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                     </tbody>
                   </table>
                 </div>
+
+                <PaginationControls
+                  {...ventasPagination}
+                  onPageChange={ventasPagination.setPage}
+                />
               </div>
             </div>
 
@@ -500,7 +514,7 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                   <>
                     <div className="space-y-3 md:hidden">
                       {filteredHistory.length ? (
-                        filteredHistory.map((item) => (
+                        historyVisible.map((item) => (
                           <HistorialCierreCard key={item.id} item={item} />
                         ))
                       ) : (
@@ -525,7 +539,7 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                         </thead>
                         <tbody>
                           {filteredHistory.length ? (
-                            filteredHistory.map((item) => (
+                            historyVisible.map((item) => (
                               <tr key={item.id}>
                                 <td>{item.fechaStr}</td>
                                 <td>{formatCurrency(item.resumen?.totalCajaReal ?? item.resumen?.totalVentas ?? 0)}</td>
@@ -546,6 +560,11 @@ export default function CierreCajaPage({ cuentaId, currentUserEmail, security })
                         </tbody>
                       </table>
                     </div>
+
+                    <PaginationControls
+                      {...historyPagination}
+                      onPageChange={historyPagination.setPage}
+                    />
                   </>
                 ) : (
                   <div className="px-4 py-8 text-sm text-center border border-dashed rounded-2xl app-muted-text" style={{ borderColor: 'var(--app-border)', background: 'var(--app-card)' }}>

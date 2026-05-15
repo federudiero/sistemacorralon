@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
 import useReportesAridos from '../hooks/useReportesAridos';
 import useProductos from '../hooks/useProductos';
 import { downloadCsv } from '../utils/csv';
@@ -192,7 +193,7 @@ export default function ReportesPage({ cuentaId }) {
       </div>
 
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : (
+      {loading ? <PageLoadingState title="Generando reportes..." rows={6} /> : (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <KpiMetric title="Facturación realizada" value={formatCurrency(data?.resumen?.totalVentas || 0)} subtitle={`Ticket promedio ${formatCurrency(data?.resumen?.ticketPromedio || 0)}`} />

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import PageHeader from '../components/shared/PageHeader';
+import PageLoadingState from '../components/shared/PageLoadingState';
+import AppIcon from '../components/shared/AppIcon';
 import ProveedoresTable from '../components/proveedores/ProveedoresTable';
 import ProveedorFormModal from '../components/proveedores/ProveedorFormModal';
 import ReadOnlyBanner from '../components/shared/ReadOnlyBanner';
@@ -27,10 +29,10 @@ export default function ProveedoresPage({ cuentaId, security }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Proveedores" actions={canWrite ? <button className="btn btn-primary" onClick={() => { setSelected(null); setOpen(true); }}>Nuevo proveedor</button> : null} />
+      <PageHeader title="Proveedores" actions={canWrite ? <button className="btn btn-primary premium-action-btn" onClick={() => { setSelected(null); setOpen(true); }}><AppIcon name="suppliers" size={17} />Nuevo proveedor</button> : null} />
       {!canWrite ? <ReadOnlyBanner message="No tenés permiso para alta o edición de proveedores." /> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
-      {loading ? <div className="loading loading-spinner loading-lg" /> : <ProveedoresTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} /> }
+      {loading ? <PageLoadingState title="Cargando proveedores..." rows={5} /> : <ProveedoresTable items={items} canEdit={canWrite} onEdit={canWrite ? (item) => { setSelected(item); setOpen(true); } : undefined} /> }
       <ProveedorFormModal open={open} initialData={selected} onClose={() => { setOpen(false); setSelected(null); }} onSubmit={handleSubmit} loading={saving} disabled={!canWrite} />
     </div>
   );
